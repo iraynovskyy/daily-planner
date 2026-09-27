@@ -1,0 +1,18 @@
+# Keep the image small and free of anything private.
+.git
+.github
+.venv
+.idea
+.vscode
+.junie
+.pytest_cache
+.ruff_cache
+**/__pycache__
+*.pyc
+data/
+docs/
+tests/
+.env
+seed.local.toml
+Dockerfile
+compose*.yml

@@ -8,7 +8,7 @@ from sqlmodel import Session
 
 from app import services
 from app.db import engine
-from app.routes import api, pages
+from app.routes import api, health, pages
 
 
 @asynccontextmanager
@@ -24,6 +24,7 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     app.include_router(pages.router)
     app.include_router(api.router)
+    app.include_router(health.router)
     return app
 
 

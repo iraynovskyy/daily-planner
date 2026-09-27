@@ -27,8 +27,9 @@ HTMX — no frontend build step.
 | Layer | Choice |
 |---|---|
 | Web | FastAPI, Jinja2 templates, HTMX, Pico CSS |
-| Data | SQLModel (SQLAlchemy) on SQLite; Postgres-ready via `DATABASE_URL` |
+| Data | SQLModel (SQLAlchemy) on PostgreSQL (psycopg 3); SQLite for quick local runs |
 | Migrations | Alembic |
+| Ops | Docker (multi-stage, non-root), Docker Compose, `/health` check |
 | Tooling | uv, Ruff, pytest, pre-commit, GitHub Actions, Dependabot |
 
 ## Run locally
@@ -45,6 +46,25 @@ A fresh database is filled once from [`seed.example.toml`](seed.example.toml). T
 own habits and notes, copy it to `seed.local.toml` (git-ignored) and edit it, or point `SEED_FILE`
 at another file.
 
+## Run with Docker (app + PostgreSQL)
+The same setup that runs in production:
+```bash
+cp .env.example .env                      # then set POSTGRES_PASSWORD to a long random value
+docker compose up -d --build              # http://localhost:8000, health: /health
+docker compose logs -f app
+docker compose down                       # stop (data stays in the pgdata volume)
+```
+The container applies pending migrations on start, runs as a non-root user and reports its health
+through `/health`. Postgres is reachable from the host on `127.0.0.1:5433`.
+
+To move existing data from SQLite into Postgres (ids are kept, sequences are fixed up):
+```bash
+docker compose stop app
+uv run python -m app.copy_data sqlite:///data/planner.db \
+  postgresql+psycopg://planner:<POSTGRES_PASSWORD>@127.0.0.1:5433/planner --replace
+docker compose start app
+```
+
 ## Develop
 ```bash
 uv run pre-commit install                 # once: lint + format on every commit
@@ -53,25 +73,34 @@ uv run ruff check . && uv run ruff format .
 # after changing app/models.py:
 uv run alembic revision --autogenerate -m "describe change" && uv run alembic upgrade head
 ```
-CI runs lint, format check, a migrations-vs-models check and the tests on every push and pull request.
+Run the tests against Postgres instead of in-memory SQLite:
+```bash
+TEST_DATABASE_URL=postgresql+psycopg://planner:<password>@127.0.0.1:5433/planner_test uv run pytest
+```
+CI runs lint and format checks, checks that migrations match the models, runs the tests on both
+SQLite and PostgreSQL, and builds the Docker image — on every push and pull request.
 
 ## Project layout
 ```
 app/
   main.py          app factory, static files, routers
+  copy_data.py     copy all rows between databases (SQLite → Postgres)
   models.py        Category, Habit (recurring template), DailyEntry (progress per habit per day), Note
   services.py      business logic, no web code
   routes/pages.py  full pages: / (month grid), /day/…, /habits
   routes/api.py    form / HTMX endpoints that return HTML fragments
+  routes/health.py /health: liveness + database check
   templates/       Jinja HTML; partials/ are the fragments HTMX swaps in
   static/          CSS and small vanilla-JS modules (reorder, highlight, notes, timeline, rings, theme)
 migrations/        Alembic schema history
 seed.example.toml  default categories, habits and notes for a fresh database
-tests/             pytest: services and routes
+tests/             pytest: services, routes, data copy
+Dockerfile         multi-stage image built with uv
+compose.yml        local stack: app + PostgreSQL
 ```
 
 ## Roadmap
-- [ ] PostgreSQL + Docker Compose
+- [x] PostgreSQL + Docker Compose
 - [ ] Login (hashed passwords, secure sessions, CSRF)
 - [ ] Deploy to a VPS behind Nginx with HTTPS, automated from GitHub Actions
 - [ ] Database backups to S3

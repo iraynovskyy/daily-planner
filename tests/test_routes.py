@@ -181,3 +181,8 @@ def test_category_icon_only_on_timeline_title(client):
     page = client.get("/month/2026-09").text
     assert "<summary>🧱 Base timeline</summary>" in page
     assert '<h3>Base<span class="cat-icon" aria-hidden="true">🧱</span></h3>' in page
+
+
+def test_health(client):
+    r = client.get("/health")
+    assert r.status_code == 200 and r.json() == {"status": "ok"}

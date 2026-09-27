@@ -1,7 +1,9 @@
+import os
 from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -16,13 +18,22 @@ def example_seed(monkeypatch):
     monkeypatch.setattr(settings, "seed_file", BASE_DIR / "seed.example.toml")
 
 
+# In-memory SQLite by default; set TEST_DATABASE_URL (e.g. a Postgres URL) to run against that.
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
+
+
 @pytest.fixture
-def engine():
-    engine = create_engine(
-        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
-    )
+def engine() -> Iterator[Engine]:
+    if TEST_DATABASE_URL:
+        engine = db.make_engine(TEST_DATABASE_URL)
+        SQLModel.metadata.drop_all(engine)  # fresh tables (and id sequences) for every test
+    else:
+        engine = create_engine(
+            "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+        )
     SQLModel.metadata.create_all(engine)
-    return engine
+    yield engine
+    engine.dispose()
 
 
 @pytest.fixture
