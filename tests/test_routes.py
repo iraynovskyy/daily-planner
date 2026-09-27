@@ -278,6 +278,9 @@ def test_no_tab_bar_when_logged_out(anon_client):
 def test_phone_extras(client):
     # Log out moves into Account on phones; the day header has a short date for them.
     assert 'class="mobile-only account-logout"' in client.get("/account").text
-    day = client.get("/day/2026-09-27").text
-    assert '<span class="desktop-only">27 September 2026</span>' in day
-    assert '<span class="mobile-only">27 Sep</span>' in day
+    # A past date, so it's never today (that would add " · today"), whatever the clock says.
+    day = client.get("/day/2020-01-15").text
+    assert '<span class="desktop-only">15 January 2020</span>' in day
+    assert '<span class="mobile-only">15 Jan</span>' in day
+    today = client.get(f"/day/{date.today()}").text
+    assert re.search(r'<span class="mobile-only">\d{2} \w{3} · today</span>', today)
