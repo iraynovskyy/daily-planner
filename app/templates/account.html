@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Account · Daily Planner{% endblock %}
+{% block content %}
+<h2>Account</h2>
+<p>Logged in as <strong>{{ user.username }}</strong>. Your categories, habits, checks and notes are yours only.</p>
+
+<h3>Invite a friend</h3>
+<p>Create a link and send it to a friend: they choose their own username and password and start with a fresh
+  example set of categories and habits. Each link works once and expires after {{ invite_days }} days.</p>
+
+{% if invite_url %}
+<article class="invite-new">
+  <p><strong>New invite link</strong> — copy it now, it won't be shown again:</p>
+  <div role="group">
+    <input id="invite-url" value="{{ invite_url }}" data-path="{{ invite_path }}" readonly aria-label="Invite link">
+    <button type="button" id="invite-copy">Copy</button>
+  </div>
+</article>
+<script>
+  // The browser knows the address the site is really reached at (behind the proxy the server
+  // may not), so build the link from it; the server-rendered value is only a fallback.
+  const inviteInput = document.getElementById("invite-url");
+  inviteInput.value = location.origin + inviteInput.dataset.path;
+  document.getElementById("invite-copy").addEventListener("click", async (e) => {
+    inviteInput.select();
+    try { await navigator.clipboard.writeText(inviteInput.value); e.target.textContent = "Copied ✓"; } catch {}
+  });
+</script>
+{% endif %}
+
+<form method="post" action="/account/invites">
+  <button type="submit"{% if invite_url %} class="secondary outline"{% endif %}>Create invite link</button>
+</form>
+
+{% if invites %}
+<h4>Open invites</h4>
+<ul class="invite-list">
+  {% for i in invites %}
+  <li>
+    <span>Created {{ i.created_at.strftime("%d %b %Y") }} · expires {{ i.expires_at.strftime("%d %b %Y") }}</span>
+    <form method="post" action="/account/invites/{{ i.id }}/revoke">
+      <button type="submit" class="secondary outline">Revoke</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

@@ -1,8 +1,11 @@
+import datetime as dt
+import re
+
 import pytest
 from sqlmodel import select
 
 from app import auth, create_user
-from app.models import DailyEntry, User
+from app.models import Category, DailyEntry, Habit, Invite, Note, User
 from tests.conftest import PASSWORD, USERNAME
 
 
@@ -15,7 +18,7 @@ def login(client, username=USERNAME, password=PASSWORD, **data):
 # --- everything is behind the login -------------------------------------------------------------
 
 
-@pytest.mark.parametrize("url", ["/", "/month/2026-09", "/day/2026-09-27", "/habits"])
+@pytest.mark.parametrize("url", ["/", "/month/2026-09", "/day/2026-09-27", "/habits", "/account"])
 def test_pages_redirect_to_login(anon_client, url):
     r = anon_client.get(url, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].startswith("/login?next=")
@@ -160,7 +163,115 @@ def test_create_user_cli(session, engine, monkeypatch, capsys):
 
 
 def test_login_page_explains_how_to_create_the_first_user(client, session):
-    session.delete(session.exec(select(User)).one())
-    session.commit()
+    for model in (DailyEntry, Habit, Category, Note, User):  # children before parents (FK)
+        for row in session.exec(select(model)):
+            session.delete(row)
+        session.commit()
     client.post("/logout")
     assert "python -m app.create_user" in client.get("/login").text
+
+
+# --- several users: each sees and changes only their own data -----------------------------------
+
+FRIEND, FRIEND_PASSWORD = "friend", "another long password"
+
+
+def test_users_only_see_their_own_data(client, session):
+    friend = auth.create_user(session, FRIEND, FRIEND_PASSWORD)  # own copy of the example set
+    assert friend.id == 2
+    client.post("/entries/1/2026-09-27", data={"count": 1})
+    client.post("/logout")
+    assert login(client, FRIEND, FRIEND_PASSWORD).status_code == 303
+
+    day = client.get("/day/2026-09-27").text
+    assert 'id="habit-13"' in day and 'id="habit-1"' not in day
+    assert "Overall · 0% done" in day
+    notes = client.get("/month/2026-09").text
+    assert 'data-note-id="8"' in notes and 'data-note-id="1"' not in notes
+
+    # Someone else's ids behave as if they didn't exist.
+    for url, data in [
+        ("/entries/1/2026-09-27", {"count": 0}),
+        ("/habits/1", {"name": "Mine now", "target_count": 1}),
+        ("/habits/1/active", {"active": "false"}),
+        ("/habits/1/highlight", {"color": "blue"}),
+        ("/habits/1/delete", {}),
+        ("/categories/1", {"name": "Mine now"}),
+        ("/categories/1/delete", {}),
+        ("/categories/4/delete", {"move_to": 1}),
+        ("/habits", {"name": "x", "target_count": 1, "category_id": 1}),
+        ("/habits/13", {"name": "x", "target_count": 1, "category_id": 1}),
+        ("/notes/1", {"text": "Mine now"}),
+        ("/notes/1/delete", {}),
+    ]:
+        assert client.post(url, data=data).status_code == 404, url
+    assert client.post("/habits/reorder", data={"ids": [1, 2]}).status_code == 400
+    assert client.post("/notes/order", data={"tip": [1, 8]}).status_code == 400
+
+    client.post("/logout")
+    login(client)
+    day = client.get("/day/2026-09-27").text
+    assert 'id="habit-1"' in day and 'id="habit-13"' not in day
+    assert 'class="habit-row done" id="habit-1"' in day  # the check survived
+    assert "Mine now" not in client.get("/habits").text
+
+
+# --- invites ------------------------------------------------------------------------------------
+
+
+def _new_invite(client) -> str:
+    r = client.post("/account/invites")
+    assert r.status_code == 200
+    return re.search(r'value="http://testserver(/join/[\w-]+)"', r.text)[1]
+
+
+def _join(client, url, username=FRIEND, password=FRIEND_PASSWORD, repeat=None):
+    data = {"username": username, "password": password, "password_repeat": repeat or password}
+    return client.post(url, data=data, follow_redirects=False)
+
+
+def test_invite_flow(client, session):
+    assert f"Logged in as <strong>{USERNAME}</strong>" in client.get("/account").text
+    url = _new_invite(client)
+    assert "Revoke" in client.get("/account").text
+    client.post("/logout")
+
+    assert 'action="' + url + '"' in client.get(url).text
+    assert "Passwords don&#39;t match." in _join(client, url, repeat="something else!!").text
+    assert "at least 12" in _join(client, url, password="short", repeat="short").text
+    assert "already exists" in _join(client, url, username=USERNAME).text
+    r = _join(client, url)  # failed attempts didn't use the invite up
+    assert r.status_code == 303 and r.headers["location"] == "/"
+
+    # Logged in straight away, with a fresh example set of their own.
+    assert f"Logged in as <strong>{FRIEND}</strong>" in client.get("/account").text
+    assert 'id="habit-13"' in client.get("/day/2026-09-27").text
+    invite = session.exec(select(Invite)).one()
+    assert invite.used_by == 2 and invite.used_at is not None
+
+    client.post("/logout")
+    r = client.get(url)
+    assert r.status_code == 404 and "invalid, expired or already used" in r.text
+    assert _join(client, url, username="third").status_code == 404
+    assert login(client, FRIEND, FRIEND_PASSWORD).status_code == 303
+
+
+def test_expired_and_revoked_invites(client, session):
+    url = _new_invite(client)
+    invite = session.exec(select(Invite)).one()
+    invite.expires_at = dt.datetime.now(dt.UTC) - dt.timedelta(minutes=1)
+    session.commit()
+    assert client.get(url).status_code == 404
+    assert "Revoke" not in client.get("/account").text
+
+    url = _new_invite(client)
+    invite_id = session.exec(select(Invite).order_by(Invite.id.desc())).first().id
+    assert client.post(f"/account/invites/{invite_id}/revoke").status_code == 200
+    assert client.get(url).status_code == 404
+    assert client.post(f"/account/invites/{invite_id}/revoke").status_code == 404
+
+
+def test_invite_tokens_are_stored_hashed(client, session):
+    token = _new_invite(client).removeprefix("/join/")
+    assert len(token) >= 32
+    assert token not in session.exec(select(Invite)).one().token_hash

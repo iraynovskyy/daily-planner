@@ -49,9 +49,13 @@ uv run python -m app.create_user <username>           # --reset to change the pa
 docker compose exec app python -m app.create_user <username>   # same, inside Docker
 ```
 
-A fresh database is filled once from [`seed.example.toml`](seed.example.toml). To start with your
-own habits and notes, copy it to `seed.local.toml` (git-ignored) and edit it, or point `SEED_FILE`
-at another file.
+Every user has their own categories, habits, checks and notes. A user created with the command
+above starts from [`seed.example.toml`](seed.example.toml); to start with your own habits and
+notes, copy it to `seed.local.toml` (git-ignored) and edit it, or point `SEED_FILE` at another file.
+
+To let a friend in, open **Account → Create invite link** and send them the link: they pick their
+own username and password and start from the example set. Each link works once and expires after
+7 days.
 
 ## Run with Docker (app + PostgreSQL)
 The same setup that runs in production:
@@ -103,7 +107,9 @@ sudo deploy/backup/restore.sh latest      # disaster recovery: replace the live 
 |---|---|
 | Passwords | argon2id hashes with a random salt each (`argon2-cffi`); plain passwords are never stored |
 | Sessions | signed cookie (`SECRET_KEY`), `HttpOnly`, `SameSite=Lax`, `Secure` with `SESSION_HTTPS_ONLY=true`; renewed on login |
-| Access | every planner router requires a login; only `/login`, `/health` and `/static` are public |
+| Access | every planner router requires a login; only `/login`, `/join/…`, `/health` and `/static` are public |
+| Data isolation | categories, habits and notes carry a `user_id`; every query and every lookup by id is scoped to the logged-in user, so another user's ids act as if they don't exist (404) |
+| Invites | one-time, random 192-bit tokens that expire after 7 days; only their SHA-256 is stored |
 | CSRF | `SameSite=Lax` + rejecting POSTs whose `Sec-Fetch-Site` / `Origin` show another site — covers forms, HTMX and `fetch()` without per-form tokens |
 | Brute force | 5 failed logins per 15 min per IP and per username, then HTTP 429 |
 | User enumeration | same message and same work (a dummy hash check) for unknown users and wrong passwords |
@@ -128,19 +134,19 @@ SQLite and PostgreSQL, and builds the Docker image — on every push and pull re
 ```
 app/
   main.py          app factory, static files, routers
-  auth.py          password hashing, login rate limiting, CSRF middleware
+  auth.py          password hashing, invites, login rate limiting, CSRF middleware
   create_user.py   CLI: create a user / reset a password
   copy_data.py     copy all rows between databases (SQLite → Postgres)
-  models.py        Category, Habit (recurring template), DailyEntry (progress per habit per day), Note, User
+  models.py        Category, Habit (recurring template), DailyEntry (progress per habit per day), Note, User, Invite
   services.py      business logic, no web code
   routes/pages.py  full pages: / (month grid), /day/…, /habits
   routes/api.py    form / HTMX endpoints that return HTML fragments
-  routes/auth.py   /login, /logout
+  routes/auth.py   /login, /logout, /account (invite links), /join/… (sign up with an invite)
   routes/health.py /health: liveness + database check
   templates/       Jinja HTML; partials/ are the fragments HTMX swaps in
   static/          CSS and small vanilla-JS modules (reorder, highlight, notes, timeline, rings, theme)
 migrations/        Alembic schema history
-seed.example.toml  default categories, habits and notes for a fresh database
+seed.example.toml  starter categories, habits and notes for a new user
 tests/             pytest: services, routes, auth / security, data copy
 Dockerfile         multi-stage image built with uv
 compose.yml        local stack: app + PostgreSQL
@@ -153,5 +159,6 @@ deploy/backup/     backup, restore and restore-check scripts + systemd timer
 - [x] Login (hashed passwords, secure sessions, CSRF, rate limiting)
 - [x] Deploy to a VPS behind Nginx with HTTPS, automated from GitHub Actions
 - [x] Database backups: nightly pg_dump + restic to Cloudflare R2 (S3 API), restore check
+- [x] Several users, each with their own data; friends join with a one-time invite link
 - [ ] Health check, uptime monitoring and error tracking
 - [ ] Public demo instance with sample data
