@@ -1,0 +1,3 @@
+<span class="day-progress{% if day_progress == 100 %} done{% endif %}" id="day-progress-{{ category_id }}-{{ day.isoformat() }}"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {{ "✅" if day_progress == 100 else day_progress ~ "%" }}
+</span>

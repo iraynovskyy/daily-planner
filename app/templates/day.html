@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ day.strftime("%a, %d %b %Y") }} · Daily Planner{% endblock %}
+{% block content %}
+<nav class="day-nav">
+  <a href="/day/{{ prev_day.isoformat() }}" role="button" class="outline">←</a>
+  <hgroup>
+    <h2>{{ day.strftime("%A") }}</h2>
+    <p>{{ day.strftime("%d %B %Y") }}{% if day == today %} · today{% endif %}</p>
+  </hgroup>
+  <a href="/day/{{ next_day.isoformat() }}" role="button" class="outline">→</a>
+</nav>
+
+<p class="back-to-month"><a href="/month/{{ day.strftime('%Y-%m') }}">← {{ day.strftime("%B %Y") }}</a></p>
+
+{% with progress_label="Overall · " %}{% include "partials/progress.html" %}{% endwith %}
+
+{% for g in groups %}
+  <section class="category">
+    <div class="category-head">
+      <h3>{{ g.category.name }}{% if g.category.icon %}<span class="cat-icon" aria-hidden="true">{{ g.category.icon }}</span>{% endif %}</h3>
+      {% with progress=g.progress, progress_id="progress-cat-" ~ g.category.id %}{% include "partials/progress.html" %}{% endwith %}
+    </div>
+    <ul class="checklist" data-reorder>
+      {% for item in g.items %}
+        {% include "partials/habit_row.html" %}
+      {% endfor %}
+    </ul>
+  </section>
+{% else %}
+  <p>No habits yet. <a href="/habits">Add some</a>.</p>
+{% endfor %}
+
+{% include "partials/note_blocks.html" %}
+{% endblock %}

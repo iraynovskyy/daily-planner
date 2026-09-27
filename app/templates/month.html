@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ first.strftime("%B %Y") }} · Daily Planner{% endblock %}
+{% block content %}
+<nav class="day-nav">
+  <a href="/month/{{ prev_month.strftime('%Y-%m') }}" role="button" class="outline">←</a>
+  <hgroup>
+    <h2>{{ first.strftime("%B") }}</h2>
+    <p>{{ first.year }}</p>
+  </hgroup>
+  <a href="/month/{{ next_month.strftime('%Y-%m') }}" role="button" class="outline">→</a>
+</nav>
+
+{% with progress_label="Overall · " %}{% include "partials/progress.html" %}{% endwith %}
+
+{% macro day_class(day) -%}
+  {% if day == today %}today{% elif day > today %}future{% endif %}{% if day.weekday() >= 5 %} weekend{% endif %}
+{%- endmacro %}
+
+{% for g in groups %}
+{% set category_id = g.category.id %}
+<section class="category" data-category-id="{{ category_id }}">
+  <div class="category-head">
+    <h3>{{ g.category.name }}{% if g.category.icon %}<span class="cat-icon" aria-hidden="true">{{ g.category.icon }}</span>{% endif %}</h3>
+    {% with progress=g.progress, progress_id="progress-cat-" ~ category_id %}{% include "partials/progress.html" %}{% endwith %}
+  </div>
+
+  <div class="month-scroll">
+    <table class="month">
+      <thead>
+        <tr>
+          <th scope="col">Habit</th>
+          {% for md in g.days %}
+            {% set day = md.day %}
+            <th scope="col" class="{{ day_class(day) }}" data-day="{{ day.isoformat() }}">
+              <a href="/day/{{ day.isoformat() }}" title="{{ day.strftime('%A %-d %B') }}">{{ day.day }} <small>{{ day.strftime("%a")[0] }}</small></a>
+            </th>
+          {% endfor %}
+          <th scope="col" class="hl-col"><span class="visually-hidden">Highlight</span></th>
+        </tr>
+      </thead>
+      <tbody data-reorder>
+        {% for h in g.habits %}
+          {% set hi = loop.index0 %}
+          <tr data-habit-id="{{ h.id }}" data-habit-name="{{ h.name }}"{% if h.optional %} class="optional" data-optional{% endif %}{% if h.highlight %} data-hl="{{ h.highlight }}"{% endif %}>
+            <th scope="row">
+              <button type="button" class="drag-handle" aria-label="Move {{ h.name }}: drag, or focus and press ↑/↓" title="Drag to reorder">⠿</button>
+              <span class="habit-title">{{ h.name }}</span>
+              {%- if h.unit %} <small class="habit-unit">· {{ h.target_count if h.target_count > 1 else "" }} {{ h.unit }}</small>{% endif %}
+              {% if h.optional %}<span class="optional-tag">optional</span>{% endif %}
+            </th>
+            {% for md in g.days %}
+              {% set day = md.day %}{% set item = md.items[hi] %}
+              <td class="{{ day_class(day) }}">{% include "partials/month_cell.html" %}</td>
+            {% endfor %}
+            <td class="hl-col">{% include "partials/highlight_picker.html" %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Done</th>
+          {% for md in g.days %}
+            {% set day = md.day %}{% set day_progress = md.progress %}
+            <td class="{{ day_class(day) }}">{% include "partials/day_progress.html" %}</td>
+          {% endfor %}
+          <td class="hl-col"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {# Collapsed by default: the checkboxes are the main thing; open/closed is remembered per category. #}
+  <details class="timeline-box" data-remember="timeline-{{ category_id }}">
+  <summary>{% if g.category.icon %}{{ g.category.icon }} {% endif %}{{ g.category.name }} timeline</summary>
+  <div class="timeline with-rings" data-today="{{ today.isoformat() }}" data-overall-label="All {{ g.category.name }}">
+    <div class="timeline-head">
+      <div class="timeline-legend" aria-label="Toggle lines"></div>
+    </div>
+    <div class="timeline-chart">
+      <svg class="timeline-svg" role="img" tabindex="0"
+           aria-label="{{ g.category.name }}: daily completion percentage for {{ first.strftime('%B %Y') }}. Use arrow keys to step through days."></svg>
+      <div class="timeline-tip" hidden></div>
+    </div>
+    <div class="timeline-rings" aria-live="polite"></div>
+  </div>
+  </details>
+</section>
+{% else %}
+  <p>No habits yet. <a href="/habits">Add some</a>.</p>
+{% endfor %}
+
+{% include "partials/note_blocks.html" %}
+
+{% if groups %}
+<script>
+  // Remember which timelines are open (per browser; storage may be unavailable).
+  for (const box of document.querySelectorAll("details[data-remember]")) {
+    const key = "planner:" + box.dataset.remember;
+    try { box.open = localStorage.getItem(key) === "open"; } catch {}
+    box.addEventListener("toggle", () => {
+      try { localStorage.setItem(key, box.open ? "open" : "closed"); } catch {}
+    });
+  }
+  // Centre today's column in every category grid.
+  for (const scroll of document.querySelectorAll(".month-scroll")) {
+    const th = scroll.querySelector("thead th.today");
+    if (th) scroll.scrollLeft = th.offsetLeft - scroll.clientWidth / 2 + th.offsetWidth / 2;
+  }
+</script>
+<script src="/static/timeline.js"></script>
+<script src="/static/rings.js"></script>
+{% endif %}
+{% endblock %}

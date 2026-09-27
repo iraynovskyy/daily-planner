@@ -1,0 +1,13 @@
+{# Row highlight picker for habit `h`; behaviour in static/highlight.js. The dot shows the current colour. #}
+<span class="hl-picker">
+  <button type="button" class="hl-button" data-habit-id="{{ h.id }}" aria-haspopup="true" aria-expanded="false"
+          aria-label="Highlight colour for {{ h.name }}" title="Highlight row"></button>
+  <span class="hl-menu" role="menu" aria-label="Highlight colour" hidden>
+    {% for c in HIGHLIGHTS %}
+      <button type="button" class="hl-dot" role="menuitemradio" data-hl-value="{{ c }}" data-hl="{{ c }}"
+              aria-checked="{{ 'true' if h.highlight == c else 'false' }}" aria-label="{{ c | capitalize }}" title="{{ c | capitalize }}"></button>
+    {% endfor %}
+    <button type="button" class="hl-dot hl-none" role="menuitemradio" data-hl-value=""
+            aria-checked="{{ 'false' if h.highlight else 'true' }}" aria-label="No highlight" title="No highlight">✕</button>
+  </span>
+</span>

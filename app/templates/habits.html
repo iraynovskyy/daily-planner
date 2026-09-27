@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Habits · Daily Planner{% endblock %}
+{% macro category_select(selected) -%}
+  <select name="category_id" aria-label="Category" required>
+    {% for c in categories %}
+      <option value="{{ c.id }}"{% if c.id == selected %} selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+{%- endmacro %}
+{% block content %}
+<h2>Habits</h2>
+<p>These appear on every day's checklist, grouped by category. Drag ⠿ to reorder. Deactivating keeps past history.
+  <em>Optional</em> habits are listed last in their category and don't count towards progress.</p>
+
+{% for category, habits in groups %}
+<section class="category">
+  <form method="post" action="/categories/{{ category.id }}" role="group" class="category-rename">
+    <input name="name" value="{{ category.name }}" required maxlength="50" aria-label="Category name">
+    <button type="submit" class="secondary outline">Rename</button>
+  </form>
+
+  <div data-reorder>
+  {% for h in habits %}
+  <article class="habit-edit{% if not h.active %} inactive{% endif %}" data-habit-id="{{ h.id }}"{% if h.optional %} data-optional{% endif %}>
+    <form method="post" action="/habits/{{ h.id }}" class="grid">
+      <input name="name" value="{{ h.name }}" required maxlength="100" aria-label="Name">
+      <input name="target_count" type="number" min="1" max="20" value="{{ h.target_count }}" aria-label="Times per day">
+      <input name="unit" value="{{ h.unit or '' }}" maxlength="20" placeholder="unit" aria-label="Unit">
+      {{ category_select(h.category_id) }}
+      <label class="optional-toggle"><input type="checkbox" name="optional" value="true" {% if h.optional %}checked{% endif %}> Optional</label>
+      <button type="submit">Save</button>
+    </form>
+    <div class="habit-actions">
+      <button type="button" class="drag-handle" aria-label="Move {{ h.name }}: drag, or focus and press ↑/↓" title="Drag to reorder">⠿</button>
+      <form method="post" action="/habits/{{ h.id }}/active">
+        <input type="hidden" name="active" value="{{ 'false' if h.active else 'true' }}">
+        <button class="{{ 'secondary' if h.active else '' }} outline">
+          {{ 'Deactivate' if h.active else 'Activate' }}
+        </button>
+      </form>
+    </div>
+  </article>
+  {% else %}
+  <p><small>No habits in this category yet.</small></p>
+  {% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+<h3>Add habit</h3>
+<form method="post" action="/habits" class="grid">
+  <input name="name" required maxlength="100" placeholder="e.g. Read 20 pages" aria-label="Name">
+  <input name="target_count" type="number" min="1" max="20" value="1" aria-label="Times per day">
+  <input name="unit" maxlength="20" placeholder="unit (optional)" aria-label="Unit">
+  {{ category_select(none) }}
+  <label class="optional-toggle"><input type="checkbox" name="optional" value="true"> Optional</label>
+  <button type="submit">Add</button>
+</form>
+
+<h3>Add category</h3>
+<form method="post" action="/categories" role="group">
+  <input name="name" required maxlength="50" placeholder="e.g. Health" aria-label="Category name">
+  <button type="submit">Add</button>
+</form>
+{% endblock %}

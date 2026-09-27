@@ -1,0 +1,61 @@
+# Default habits and notes for a fresh database (the app seeds them once, when it has no habits).
+# Copy this file to seed.local.toml (git-ignored) to use your own set; that file wins if present.
+
+[[category]]
+name = "Base"
+icon = "🧱"
+habits = [
+  { name = "Workout", target = 1, unit = "10 min" },
+  { name = "Food", target = 3, unit = "meals" },
+  { name = "Run", target = 1, unit = "5 min" },
+  { name = "AM / PM routine", target = 2 },
+  { name = "Bed by 11pm", target = 1 },
+]
+
+[[category]]
+name = "Career"
+icon = "🚀"
+habits = [
+  { name = "Learning videos", target = 2, unit = "videos" },
+  { name = "Side project", target = 1, unit = "30 min" },
+  { name = "Deep work", target = 1 },
+  { name = "Ship something small", target = 1 },
+]
+
+[[category]]
+name = "Good habits"
+icon = "🌱"
+habits = [
+  { name = "No sugar", target = 1, optional = true },
+  { name = "Reading", target = 1, unit = "5 min" },
+  { name = "Tidy up", target = 1 },
+]
+
+# kind is one of: tip, idea, comfort
+[[note]]
+kind = "tip"
+text = "Small steps every day beat rare big ones"
+
+[[note]]
+kind = "tip"
+text = "Write down one thing you learned today"
+
+[[note]]
+kind = "idea"
+text = "Try a new recipe this week"
+
+[[note]]
+kind = "idea"
+text = "Plan a weekend trip"
+
+[[note]]
+kind = "comfort"
+text = "Take a walk without your phone"
+
+[[note]]
+kind = "comfort"
+text = "Add a plant to your room"
+
+[[note]]
+kind = "comfort"
+text = "Call a friend"

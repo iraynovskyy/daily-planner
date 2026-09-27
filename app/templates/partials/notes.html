@@ -1,0 +1,33 @@
+{# One collapsible note card. Closed on page load; add/delete re-render it open via HTMX. #}
+{% set icon = {"tip": "💡", "idea": "✨", "comfort": "🛋️"}[kind] %}
+<details class="notes" id="notes-{{ kind }}" data-kind="{{ kind }}"{% if open %} open{% endif %}>
+  <summary>
+    <span class="notes-icon" aria-hidden="true">{{ icon }}</span>
+    <span class="notes-title">{{ title }}</span>
+    <span class="notes-count" aria-label="{{ notes | length }} notes">{{ notes | length }}</span>
+    <span class="notes-chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="notes-body">
+    {# Behaviour (drag between blocks, ↑/↓/←/→, inline edit) lives in static/notes.js. #}
+    <ul data-notes="{{ kind }}">
+      {% for n in notes %}
+        <li data-note-id="{{ n.id }}">
+          <button type="button" class="drag-handle" title="Drag to reorder or move to another block"
+                  aria-label="Move note: drag, or focus and press ↑/↓ (←/→ to another block)">⠿</button>
+          <span class="notes-text" title="Double-click to edit">{{ n.text }}</span>
+          <button type="button" class="notes-action notes-edit" aria-label="Edit note: {{ n.text }}" title="Edit">✎</button>
+          <button type="button" class="notes-action notes-delete" aria-label="Delete note: {{ n.text }}" title="Delete"
+                  hx-post="/notes/{{ n.id }}/delete" hx-confirm="Delete this note?"
+                  hx-target="#notes-{{ kind }}" hx-swap="outerHTML">✕</button>
+        </li>
+      {% else %}
+        <li class="notes-empty">Nothing here yet.</li>
+      {% endfor %}
+    </ul>
+    <form class="notes-add" hx-post="/notes" hx-target="#notes-{{ kind }}" hx-swap="outerHTML">
+      <input type="hidden" name="kind" value="{{ kind }}">
+      <input name="text" required maxlength="300" placeholder="Add to {{ title }}…" aria-label="New note for {{ title }}">
+      <button type="submit" aria-label="Add note">＋</button>
+    </form>
+  </div>
+</details>

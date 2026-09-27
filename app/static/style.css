@@ -1,0 +1,408 @@
+/* Task (habit) names: own tint so they read apart from headings like "Base", "Habit", "Done" */
+:root { --task-color: #1f55a8; }
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --task-color: #8fb8f5; }
+}
+:root[data-theme="dark"] { --task-color: #8fb8f5; }
+.habit-title { color: var(--task-color); font-weight: 600; letter-spacing: .005em; }
+/* Grid labels ("Habit", "Done") read as quiet column captions, not as content. */
+table.month thead th:first-child, table.month tfoot th[scope=row] {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--pico-muted-color);
+}
+.habit-unit { color: var(--pico-muted-color); font-weight: normal; white-space: nowrap; }
+/* Day checklist: task names a step smaller than body text (Pico scales the root up on wide screens) */
+.checklist .habit-title, table.month .habit-title { font-size: .85rem; }
+.checklist .habit-unit { font-size: .75rem; }
+/* Category emoji: small, grey and faint until the heading is hovered */
+.cat-icon {
+  display: inline-block; margin-left: .4rem; font-size: .8em; vertical-align: .05em;
+  filter: grayscale(1); opacity: .45; transition: filter .2s, opacity .2s;
+}
+.category-head:hover .cat-icon { filter: none; opacity: 1; }
+
+/* Compact top: nav, title and arrows take little room so the checklist/grid gets the focus */
+body > header.container { padding-block: .25rem; }
+body > header nav li { padding-block: .35rem; }
+body > main.container { padding-block: 0 2rem; }
+.day-nav { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: .25rem; }
+.day-nav hgroup { display: flex; align-items: baseline; gap: .6rem; margin: 0; text-align: center; }
+.day-nav hgroup h2 { font-size: 1.35rem; margin: 0; }
+.day-nav hgroup p { margin: 0; font-size: .9rem; }
+.day-nav > a[role=button] { padding: .2rem .7rem; font-size: .9rem; }
+/* Progress bar and its label on one line */
+.progress-bar { display: flex; align-items: center; gap: .75rem; margin: .5rem 0 .75rem; }
+.progress-bar progress { flex: 1; margin: 0; }
+.progress-bar small { white-space: nowrap; min-width: 8.5rem; text-align: right; }
+/* Categories: each gets its own block with progress, grid and timeline */
+.category { margin: 1rem 0 1.5rem; padding-top: .75rem; border-top: 1px solid var(--pico-muted-border-color); }
+.category-head { display: flex; align-items: center; gap: 1rem; margin-bottom: .5rem; }
+.category-head h3 { margin: 0; font-size: 1.1rem; white-space: nowrap; min-width: 8rem; }
+.category-head .progress-bar { flex: 1; margin: 0; }
+.category-rename { max-width: 28rem; }
+.category-rename input { font-weight: 700; }
+.checklist { list-style: none; padding: 0; }
+.checklist li.habit-row {
+  list-style: none; display: flex; align-items: center; justify-content: space-between;
+  padding: .75rem 1rem; margin-bottom: .5rem; border-radius: var(--pico-border-radius);
+  background: var(--pico-card-background-color); box-shadow: var(--pico-card-box-shadow);
+}
+.habit-row.done .habit-name { text-decoration: line-through; opacity: .6; }
+.habit-checks input[type=checkbox] { width: 1.6rem; height: 1.6rem; margin: 0 0 0 .4rem; }
+.habit-actions { display: flex; gap: .5rem; }
+.habit-actions button { padding: .3rem .8rem; margin: 0; }
+.habit-edit.inactive { opacity: .55; }
+/* Optional habits: visible for tracking, visually lower priority, excluded from progress */
+.checklist li.habit-row.optional { opacity: .7; box-shadow: none; border: 1px dashed var(--pico-muted-border-color); }
+table.month tr.optional { opacity: .7; }
+.optional-tag { font-size: .7rem; padding: 0 .4rem; margin-left: .4rem; border-radius: 999px; border: 1px solid var(--pico-muted-border-color); color: var(--pico-muted-color); font-weight: normal; }
+.optional-toggle { display: flex; align-items: center; gap: .4rem; white-space: nowrap; margin: 0; }
+.htmx-request { opacity: .6; transition: opacity .2s; }
+.back-to-month { text-align: center; margin: 0; font-size: .85rem; }
+
+/* Month view: habits as rows, days as columns */
+.month-scroll { overflow-x: auto; }
+table.month { width: max-content; min-width: 100%; }
+table.month th, table.month td { text-align: center; vertical-align: middle; padding: .3rem .15rem; }
+/* Fixed day-column width, wide enough for the widest "Done" label ("99%"), so ticking a box
+   (which changes that label) never resizes the column and shifts the grid. */
+table.month td, table.month thead th:not(:first-child) { width: 2.5rem; min-width: 2.5rem; }
+table.month thead th { font-size: .8rem; line-height: 1.1; }
+table.month thead th { white-space: nowrap; }
+table.month thead th a { text-decoration: none; }
+table.month thead small { display: block; font-weight: normal; opacity: .6; }
+table.month th[scope=row], table.month thead th:first-child { min-width: 12rem; }
+table.month th[scope=row] {
+  position: sticky; left: 0; z-index: 1; text-align: left; white-space: nowrap;
+  background: var(--pico-background-color);
+}
+table.month tbody th[scope=row] { font-weight: normal; }
+table.month thead th:first-child { text-align: left; position: sticky; left: 0; z-index: 2; background: var(--pico-background-color); }
+table.month th.weekend small { color: var(--pico-del-color); opacity: .9; }
+/* Today: a soft tint of the primary colour down the column, a bit stronger on the date header,
+   with a thin accent line on top — noticeable without glaring. */
+table.month .today { background: color-mix(in srgb, var(--pico-primary) 10%, var(--pico-background-color)); }
+table.month thead th.today {
+  background: color-mix(in srgb, var(--pico-primary) 20%, var(--pico-background-color));
+  box-shadow: inset 0 2px 0 var(--pico-primary); border-radius: 4px 4px 0 0;
+}
+table.month .today a { color: var(--pico-primary); font-weight: 700; }
+table.month .future { opacity: .55; }
+.cell { display: inline-flex; flex-direction: column; gap: .15rem; }
+.cell input[type=checkbox] { width: 1.05rem; height: 1.05rem; margin: 0; }
+/* Multi-check habits (Food 3, Morning/Evening 2): joined segments in one row, each clickable. */
+.cell.multi { flex-direction: row; gap: 2px; }
+.cell.multi input[type=checkbox] {
+  appearance: none; width: calc((2.1rem - (var(--n) - 1) * 2px) / var(--n)); height: 1.05rem;
+  border-radius: 2px; background-image: none; cursor: pointer;
+  transition: background-color .12s, border-color .12s;
+}
+.cell.multi input[type=checkbox]:first-child { border-radius: 5px 2px 2px 5px; }
+.cell.multi input[type=checkbox]:last-child { border-radius: 2px 5px 5px 2px; }
+.cell.multi input[type=checkbox]:checked { background-image: none; }
+.cell.multi input[type=checkbox]:hover { border-color: var(--pico-primary); }
+.day-progress { font-size: .7rem; opacity: .75; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.day-progress.done { opacity: 1; }
+
+/* Progress timeline (drawn by static/timeline.js from the grid above) */
+.timeline {
+  margin-top: 2rem;
+  /* Captured here because Pico redefines --pico-color inside buttons. */
+  --ink: var(--pico-color); --ink-muted: var(--pico-muted-color);
+  --series-overall: var(--pico-muted-color);
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7; --series-8: #e34948;
+}
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .timeline {
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  }
+}
+:root[data-theme="dark"] .timeline {
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+}
+.timeline-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem 1rem; flex-wrap: wrap; }
+.timeline-head h3, .timeline-head h4 { margin: 0; }
+.timeline-legend { display: flex; flex-wrap: wrap; gap: .35rem; }
+.timeline-legend button {
+  display: inline-flex; align-items: center; gap: .45rem; margin: 0; padding: .25rem .65rem;
+  font-size: .8rem; color: var(--ink); background: transparent;
+  border: 1px solid var(--pico-muted-border-color); border-radius: 999px;
+}
+.timeline-legend button[aria-pressed="false"] { color: var(--ink-muted); opacity: .6; }
+.timeline-legend button[aria-pressed="false"] .key { opacity: .35; }
+.timeline-legend .key, .timeline-tip .key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; flex: none; }
+.timeline-chart { position: relative; margin-top: 1rem; }
+.timeline-svg { display: block; width: 100%; height: 260px; overflow: visible; outline: none; cursor: crosshair; }
+.timeline-svg:focus-visible { box-shadow: 0 0 0 2px var(--pico-primary-focus); border-radius: 4px; }
+.timeline-svg .grid { stroke: var(--pico-muted-border-color); stroke-width: 1; }
+.timeline-svg .axis-label { fill: var(--pico-muted-color); font-size: 11px; }
+.timeline-svg .halo { fill: none; stroke: var(--pico-background-color); stroke-width: 5; stroke-linejoin: round; stroke-linecap: round; }
+.timeline-svg .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.timeline-svg .leader { stroke-width: 1; opacity: .6; }
+.timeline-svg .end-label { fill: var(--pico-color); font-size: 11px; }
+.timeline-svg .today-mark { stroke: var(--pico-muted-color); stroke-width: 1; opacity: .5; }
+.timeline-svg .crosshair { stroke: var(--pico-muted-color); stroke-width: 1; }
+.timeline-svg .dot { stroke: var(--pico-background-color); stroke-width: 2; }
+.timeline-svg .empty { fill: var(--pico-muted-color); font-size: 13px; }
+.timeline-tip {
+  position: absolute; top: 0; pointer-events: none; min-width: 11rem;
+  padding: .45rem .65rem; border-radius: var(--pico-border-radius); font-size: .8rem;
+  background: var(--pico-card-background-color); box-shadow: var(--pico-card-box-shadow);
+  border: 1px solid var(--pico-muted-border-color);
+}
+.timeline-tip .tip-date { color: var(--pico-muted-color); margin-bottom: .2rem; }
+.timeline-tip .tip-row { display: flex; align-items: center; gap: .5rem; color: var(--pico-muted-color); }
+.timeline-tip .tip-row b { color: var(--pico-color); font-weight: 700; min-width: 2.6rem; }
+.timeline-tip .tip-row span:last-child { margin-left: auto; padding-left: .5rem; }
+
+/* Note cards (Own Tips, Ideas) under the checklist: side by side, each collapsible */
+.note-blocks {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; align-items: start;
+  margin: 2rem 0; padding-top: 1.25rem; border-top: 1px solid var(--pico-muted-border-color);
+}
+.notes[data-kind="tip"] { --note-accent: var(--hl-amber); }
+.notes[data-kind="idea"] { --note-accent: var(--hl-violet); }
+.notes[data-kind="comfort"] { --note-accent: var(--hl-green); }
+.notes {
+  margin: 0; border-radius: .75rem; overflow: hidden;
+  background: var(--pico-card-background-color); border: 1px solid var(--pico-muted-border-color);
+  transition: border-color .2s, box-shadow .2s;
+}
+.notes:hover, .notes[open] { border-color: color-mix(in srgb, var(--note-accent) 55%, var(--pico-muted-border-color)); }
+.notes[open] { box-shadow: 0 6px 20px rgb(0 0 0 / .18); }
+.notes > summary {
+  display: flex; align-items: center; gap: .7rem; margin: 0; padding: .75rem 1rem;
+  list-style: none; cursor: pointer; color: var(--pico-color); font-weight: 600;
+}
+.notes > summary::-webkit-details-marker { display: none; }
+.notes > summary::after { display: none; } /* drop Pico's own chevron */
+/* Pico mutes and spaces open summaries (details[open] > summary:not([role]):not(:focus)) */
+details.notes[open] > summary:not([role]) { color: var(--pico-color); margin-bottom: 0; }
+details.notes > summary:not([role]):focus { color: var(--pico-color); }
+.notes > summary:focus-visible { outline: 2px solid var(--pico-primary); outline-offset: -2px; border-radius: .75rem; }
+.notes-icon {
+  display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: .6rem; flex: none;
+  background: color-mix(in srgb, var(--note-accent) 18%, transparent); font-size: 1rem;
+}
+.notes-count {
+  margin-left: auto; min-width: 1.6rem; padding: .05rem .5rem; border-radius: 999px; text-align: center;
+  font-size: .75rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--pico-muted-color);
+  background: var(--pico-muted-border-color);
+}
+.notes-chevron {
+  width: .5rem; height: .5rem; margin: 0 .2rem 0 .1rem; flex: none;
+  border-right: 2px solid var(--pico-muted-color); border-bottom: 2px solid var(--pico-muted-color);
+  transform: rotate(-45deg); transition: transform .2s;
+}
+.notes[open] .notes-chevron { transform: rotate(45deg); }
+.notes-body { padding: .25rem 1rem 1rem; border-top: 1px solid var(--pico-muted-border-color); animation: notes-in .18s ease-out; }
+@keyframes notes-in { from { opacity: 0; transform: translateY(-4px); } }
+.notes ul { list-style: none; padding: 0; margin: .5rem 0 .75rem; }
+.notes li {
+  list-style: none; display: flex; align-items: flex-start; gap: .6rem; margin: 0;
+  padding: .45rem .25rem; border-bottom: 1px dashed var(--pico-muted-border-color); font-size: .92rem;
+}
+.notes li:last-child { border-bottom: none; }
+.notes li::before {
+  content: ""; width: .45rem; height: .45rem; margin-top: .45rem; border-radius: 50%; flex: none;
+  background: var(--note-accent);
+}
+.notes-text { flex: 1; }
+.notes li.notes-empty { color: var(--pico-muted-color); font-size: .85rem; }
+.notes li.notes-empty::before { background: var(--pico-muted-border-color); }
+.notes-delete:hover { color: var(--pico-del-color); background: color-mix(in srgb, var(--pico-del-color) 15%, transparent); }
+.notes-add { display: flex; gap: .5rem; margin: 0; }
+.notes-add input[name=text] { margin: 0; flex: 1; height: 2.4rem; padding-block: .3rem; font-size: .9rem; }
+.notes-add button {
+  margin: 0; width: 2.4rem; height: 2.4rem; padding: 0; flex: none; font-size: 1.1rem; line-height: 1;
+  background: var(--note-accent); border-color: var(--note-accent); color: #fff;
+}
+
+/* Progress rings beside each timeline (drawn by static/rings.js) */
+.timeline.with-rings { display: grid; grid-template-columns: minmax(0, 1fr) 14rem; column-gap: 1.5rem; }
+.timeline.with-rings .timeline-head { grid-column: 1 / -1; }
+.timeline-rings { margin-top: 1rem; }
+@media (max-width: 768px) { .timeline.with-rings { grid-template-columns: minmax(0, 1fr); } }
+.rings-caption { font-size: .8rem; color: var(--pico-muted-color); margin-bottom: .5rem; }
+.rings-empty { font-size: .85rem; color: var(--pico-muted-color); }
+.ring-main { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+.ring-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .35rem; }
+.ring-list li { list-style: none; display: flex; align-items: center; gap: .6rem; margin: 0; }
+.ring-label { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; font-size: .8rem; color: var(--pico-color); }
+.ring-label small { color: var(--pico-muted-color); }
+.ring-label .key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; flex: none; }
+.ring-track { fill: none; stroke: var(--pico-muted-border-color); }
+.ring-arc { fill: none; stroke-linecap: round; }
+.ring-value { fill: var(--pico-color); font-size: 11px; font-weight: 600; text-anchor: middle; dominant-baseline: central; font-variant-numeric: tabular-nums; }
+.ring-value.big { font-size: 18px; }
+
+/* Reordering habits (static/reorder.js): ⠿ handle, drag ghost, and a short highlight on drop */
+.drag-handle {
+  all: unset; display: inline-block; cursor: grab; padding: .1rem .35rem; margin-right: .25rem;
+  border-radius: 4px; color: var(--pico-muted-color); font-size: 1rem; line-height: 1;
+  user-select: none; touch-action: none; transition: color .15s, background-color .15s;
+}
+.drag-handle:hover { color: var(--pico-color); background: var(--pico-muted-border-color); }
+.drag-handle:focus-visible { outline: 2px solid var(--pico-primary); outline-offset: 1px; }
+.drag-chosen, .drag-chosen .drag-handle { cursor: grabbing; }
+.drag-ghost { opacity: .35; }
+.drag-dragging { box-shadow: 0 8px 24px rgb(0 0 0 / .35); }
+table.month tr.drag-ghost > * { background: var(--pico-muted-border-color); }
+.habit-actions .drag-handle { align-self: center; font-size: 1.2rem; }
+/* Inset shadow tints over the element's own (opaque) background, so the sticky month column
+   never turns see-through while it fades. */
+@keyframes just-moved {
+  from { box-shadow: inset 0 0 0 100vmax var(--pico-primary-focus); }
+  to { box-shadow: inset 0 0 0 100vmax transparent; }
+}
+.checklist li.just-moved, article.just-moved, table.month tr.just-moved > th { animation: just-moved 1.2s ease-out; }
+
+/* Row highlights (static/highlight.js). One token per colour, re-stepped for dark mode. */
+:root { --hl-blue: #2a78d6; --hl-green: #1baf7a; --hl-amber: #eda100; --hl-rose: #e87ba4; --hl-violet: #7a6ae0; }
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --hl-blue: #3987e5; --hl-green: #199e70; --hl-amber: #c98500; --hl-rose: #d55181; --hl-violet: #9085e9; }
+}
+:root[data-theme="dark"] { --hl-blue: #3987e5; --hl-green: #199e70; --hl-amber: #c98500; --hl-rose: #d55181; --hl-violet: #9085e9; }
+[data-hl="blue"] { --row-hl: var(--hl-blue); }
+[data-hl="green"] { --row-hl: var(--hl-green); }
+[data-hl="amber"] { --row-hl: var(--hl-amber); }
+[data-hl="rose"] { --row-hl: var(--hl-rose); }
+[data-hl="violet"] { --row-hl: var(--hl-violet); }
+
+/* Tint = colour mixed into the row's own background (stays opaque for the sticky month column),
+   plus a solid stripe on the left edge. */
+.checklist li.habit-row[data-hl] {
+  background: color-mix(in srgb, var(--row-hl) var(--hl-wash-card, 16%), var(--pico-card-background-color));
+  box-shadow: inset 4px 0 0 var(--row-hl), var(--pico-card-box-shadow);
+  transition: background-color .25s;
+}
+table.month tr[data-hl] > th, table.month tr[data-hl] > td:not(.today) {
+  background: color-mix(in srgb, var(--row-hl) var(--hl-wash-grid, 14%), var(--pico-background-color));
+}
+table.month tr[data-hl] > th { box-shadow: inset 4px 0 0 var(--row-hl); }
+
+/* The picker lives in its own column at the right end of each row. In the month grid that column
+   is sticky, like the habit-name column on the left, so it's reachable without scrolling. */
+.hl-picker { position: relative; display: inline-flex; flex: none; }
+.checklist li.habit-row .hl-col {
+  display: flex; align-items: center; align-self: stretch; margin: -.75rem -1rem -.75rem 1rem;
+  padding: 0 .9rem; border-left: 1px solid var(--pico-muted-border-color);
+}
+table.month .hl-col {
+  position: sticky; right: 0; z-index: 1; width: 2.6rem; min-width: 2.6rem;
+  background: var(--pico-background-color); border-left: 1px solid var(--pico-muted-border-color);
+}
+table.month thead .hl-col { z-index: 2; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.hl-button, .hl-dot {
+  all: unset; box-sizing: border-box; width: 1.1rem; height: 1.1rem; border-radius: 50%; cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+}
+.hl-button { background: var(--row-hl, transparent); border: 2px dashed var(--pico-muted-border-color); opacity: .75; }
+[data-hl] .hl-button { border: 2px solid var(--pico-background-color); box-shadow: 0 0 0 1px var(--row-hl); opacity: 1; }
+.hl-button:hover { opacity: 1; transform: scale(1.12); }
+.hl-button:focus-visible, .hl-dot:focus-visible { outline: 2px solid var(--pico-primary); outline-offset: 2px; }
+/* Palette opens to the left of the button, inside the row, so it's never clipped by the grid. */
+.hl-menu {
+  position: absolute; right: calc(100% + .4rem); top: 50%; transform: translateY(-50%); z-index: 20;
+  display: flex; gap: .4rem; padding: .35rem .5rem; border-radius: 999px;
+  background: var(--pico-card-background-color); border: 1px solid var(--pico-muted-border-color);
+  box-shadow: 0 6px 18px rgb(0 0 0 / .25); animation: hl-pop .12s ease-out;
+}
+.hl-menu[hidden] { display: none; }
+@keyframes hl-pop { from { opacity: 0; transform: translateY(-50%) scale(.9); } }
+.hl-dot { background: var(--row-hl); }
+.hl-dot:hover { transform: scale(1.18); }
+.hl-dot[aria-checked="true"] { box-shadow: 0 0 0 2px var(--pico-card-background-color), 0 0 0 4px var(--pico-color); }
+.hl-none { background: var(--pico-card-background-color); display: grid; place-items: center; font-size: .65rem; color: var(--pico-muted-color); border: 1px solid var(--pico-muted-border-color); }
+.checklist .hl-col.hl-open { position: relative; z-index: 5; }
+table.month .hl-col.hl-open { z-index: 5; }
+
+/* Collapsible timeline per category */
+.timeline-box { margin-top: 1rem; }
+.timeline-box > summary {
+  display: inline-flex; align-items: center; gap: .5rem; padding: .3rem .8rem; margin: 0;
+  font-size: .85rem; color: var(--pico-muted-color); list-style: none; cursor: pointer;
+  border: 1px solid var(--pico-muted-border-color); border-radius: 999px; transition: color .15s, border-color .15s;
+}
+.timeline-box > summary::-webkit-details-marker { display: none; }
+.timeline-box > summary::before { content: "▸"; transition: transform .15s; }
+.timeline-box[open] > summary::before { transform: rotate(90deg); }
+.timeline-box > summary::after { display: none; } /* drop Pico's own chevron */
+.timeline-box > summary:hover { color: var(--pico-color); border-color: var(--pico-color); }
+.timeline-box > summary:focus-visible { outline: 2px solid var(--pico-primary); outline-offset: 2px; }
+.timeline-box .timeline { margin-top: .75rem; }
+.checklist li.habit-row .habit-name { flex: 1; min-width: 0; }
+
+/* Notes: drag handle, inline edit (static/notes.js) */
+.notes li[data-note-id]::before { display: none; } /* the ⠿ handle replaces the dot */
+.notes li .drag-handle { color: var(--note-accent); margin: 0; padding: .1rem .2rem; }
+.notes li.drag-ghost { opacity: .35; }
+.notes li.drag-chosen { background: color-mix(in srgb, var(--note-accent) 10%, transparent); border-radius: 6px; }
+.notes-action {
+  all: unset; flex: none; width: 1.5rem; height: 1.5rem; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; font-size: .75rem; color: var(--pico-muted-color);
+  opacity: .35; transition: opacity .15s, background-color .15s, color .15s;
+}
+.notes li:hover .notes-action, .notes-action:focus-visible { opacity: 1; }
+.notes-action:focus-visible { outline: 2px solid var(--pico-primary); }
+.notes-edit:hover { color: var(--pico-color); background: var(--pico-muted-border-color); }
+.notes-text { cursor: text; }
+.notes-text-input { flex: 1; margin: 0 !important; height: 1.9rem !important; padding: .15rem .5rem !important; font-size: .92rem !important; }
+.notes li.saving { opacity: .6; }
+.notes [data-notes].drop-target { outline: 2px dashed color-mix(in srgb, var(--note-accent) 60%, transparent); outline-offset: 2px; border-radius: 6px; min-height: 2.2rem; }
+
+/* Light theme: warm greys instead of Pico's pure white (palette: warm stone).
+   Ink-coloured task names, a soft slate-teal accent, lighter highlight washes and hairline
+   card borders keep it as calm as the dark theme. */
+:root[data-theme="light"] {
+  --pico-background-color: #cfcbc4;
+  --pico-card-background-color: #dedad3;
+  --pico-card-sectioning-background-color: #d6d2cb;
+  --pico-form-element-background-color: #eae7e2;
+  --pico-form-element-border-color: #a8a298;
+  --pico-muted-border-color: #bbb5ab;
+  --pico-code-background-color: #c8c3bb;
+  --pico-progress-background-color: #bdb7ad;
+  --pico-card-box-shadow: 0 0 0 1px rgb(50 40 25 / 8%), 0 1px 3px rgb(50 40 25 / 8%);
+  --pico-color: #2a2622;
+  --pico-muted-color: #655e55;
+  --pico-primary: #3a6a7e;
+  --pico-primary-background: #3a6a7e;
+  --pico-primary-border: #3a6a7e;
+  --pico-primary-underline: rgb(58 106 126 / 50%);
+  --pico-primary-hover: #2e5868;
+  --pico-primary-hover-background: #2e5868;
+  --pico-primary-hover-border: #2e5868;
+  --pico-primary-focus: rgb(58 106 126 / 30%);
+  --pico-progress-color: #3a6a7e;
+  --task-color: #35302a;
+  --hl-blue: #3b82e0; --hl-green: #22b07d; --hl-amber: #f0a500; --hl-rose: #ec6f9c; --hl-violet: #8a7cf0;
+  --hl-wash-card: 11%;
+  --hl-wash-grid: 10%;
+  color-scheme: light;
+}
+body { transition: background-color .25s, color .25s; }
+
+/* Theme switch: a small round ghost button; shows the sun in dark mode, the moon in light mode. */
+.theme-toggle {
+  display: grid; place-items: center; width: 2.1rem; height: 2.1rem; padding: 0; margin: 0;
+  border-radius: 999px; border: 1px solid var(--pico-muted-border-color);
+  background: transparent; color: var(--pico-muted-color); box-shadow: none;
+  transition: color .2s, border-color .2s, background-color .2s, transform .3s;
+}
+.theme-toggle:hover, .theme-toggle:focus-visible {
+  color: var(--pico-color); border-color: var(--pico-muted-color);
+  background: color-mix(in srgb, var(--pico-muted-color) 12%, transparent);
+}
+.theme-toggle:active { transform: rotate(-25deg) scale(.92); }
+.theme-toggle svg {
+  width: 1.05rem; height: 1.05rem; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.theme-toggle .icon-moon { display: none; }
+:root[data-theme="light"] .theme-toggle .icon-sun { display: none; }
+:root[data-theme="light"] .theme-toggle .icon-moon { display: block; }

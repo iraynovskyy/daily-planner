@@ -1,0 +1,30 @@
+[project]
+name = "daily-planner"
+version = "0.1.0"
+description = "Daily habit planner (FastAPI + HTMX)"
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.20.0",
+    "fastapi>=0.141.1",
+    "jinja2>=3.1.6",
+    "pydantic-settings>=2.15.0",
+    "python-multipart>=0.0.32",
+    "sqlmodel>=0.0.47",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "pytest>=9.1.1",
+    "ruff>=0.16.9",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

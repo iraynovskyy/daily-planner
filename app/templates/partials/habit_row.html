@@ -1,0 +1,25 @@
+{% set h = item.habit %}{% set n = item.entry.count_done %}
+<li class="habit-row{% if item.done %} done{% endif %}{% if h.optional %} optional{% endif %}" id="habit-{{ h.id }}"
+    data-habit-id="{{ h.id }}"{% if h.optional %} data-optional{% endif %}{% if h.highlight %} data-hl="{{ h.highlight }}"{% endif %}>
+  <span class="habit-name">
+    <button type="button" class="drag-handle" aria-label="Move {{ h.name }}: drag, or focus and press ↑/↓" title="Drag to reorder">⠿</button>
+    <span class="habit-title">{{ h.name }}</span>
+    {%- if h.unit %} <small class="habit-unit">· {{ h.target_count if h.target_count > 1 else "" }} {{ h.unit }}</small>{% endif %}
+    {% if h.optional %}<span class="optional-tag">optional</span>{% endif %}
+  </span>
+  <span class="habit-checks">
+    {% for k in range(1, h.target_count + 1) %}
+      {# Clicking a checked box un-checks it and everything after; an unchecked box fills up to it. #}
+      <input type="checkbox" aria-label="{{ h.name }} {{ k }}/{{ h.target_count }}"
+             {% if k <= n %}checked{% endif %}
+             hx-post="/entries/{{ h.id }}/{{ day.isoformat() }}"
+             hx-vals='{"count": {{ k - 1 if k <= n else k }}}'
+             hx-target="#habit-{{ h.id }}" hx-swap="outerHTML">
+    {% endfor %}
+  </span>
+  <span class="hl-col">{% include "partials/highlight_picker.html" %}</span>
+</li>
+{% if oob %}
+  {% with progress_label="Overall · " %}{% include "partials/progress.html" %}{% endwith %}
+  {% with progress=cat_progress, progress_id="progress-cat-" ~ h.category_id %}{% include "partials/progress.html" %}{% endwith %}
+{% endif %}
