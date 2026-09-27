@@ -5,7 +5,8 @@
   <a href="/day/{{ prev_day.isoformat() }}" role="button" class="outline">←</a>
   <hgroup>
     <h2>{{ day.strftime("%A") }}</h2>
-    <p>{{ day.strftime("%d %B %Y") }}{% if day == today %} · today{% endif %}</p>
+    {% set today_tag = " · today" if day == today else "" %}
+    <p><span class="desktop-only">{{ day.strftime("%d %B %Y") ~ today_tag }}</span><span class="mobile-only">{{ day.strftime("%d %b") ~ today_tag }}</span></p>
   </hgroup>
   <a href="/day/{{ next_day.isoformat() }}" role="button" class="outline">→</a>
 </nav>

@@ -485,3 +485,47 @@ body { transition: background-color .25s, color .25s; }
 @media (prefers-reduced-motion: reduce) {
   .golden input[type=checkbox]:checked, .gold-pop input[type=checkbox]:checked { animation: none; }
 }
+
+/* --- Phones: tab bar at the bottom instead of the header links -------------------------------- */
+/* Everything below only applies under 700px; wider screens look exactly as before. */
+.tabbar, .mobile-only { display: none; }
+@media (max-width: 700px) {
+  .mobile-only { display: revert; }
+  .desktop-only { display: none; }
+
+  /* Header: brand + theme toggle only, on one line. */
+  body > header nav ul:last-child li:not(:first-child) { display: none; }
+  body > header nav strong { white-space: nowrap; font-size: 1rem; }
+
+  /* Day header on one line: short date, tighter arrows. */
+  .day-nav { gap: .5rem; }
+  .day-nav hgroup { gap: .4rem; white-space: nowrap; }
+  .day-nav hgroup h2 { font-size: 1.15rem; }
+  .day-nav hgroup p { font-size: .8rem; }
+
+  .tabbar {
+    position: fixed; inset: auto 0 0 0; z-index: 10;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: color-mix(in srgb, var(--pico-background-color) 88%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--pico-muted-border-color);
+  }
+  .tabbar a {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
+    min-height: 56px; font-size: .68rem; font-weight: 600; letter-spacing: .02em;
+    color: var(--pico-muted-color); text-decoration: none; touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tabbar svg {
+    width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .tabbar a[aria-current="page"] { color: var(--pico-primary); }
+  .tabbar a[aria-current="page"] svg { stroke-width: 2.2; }
+  .tabbar a:active { transform: scale(.94); }
+  /* Keep the last rows and notes clear of the bar. */
+  body:has(.tabbar) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+
+  .account-logout { margin-top: 2rem; }
+}
