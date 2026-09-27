@@ -21,6 +21,7 @@ set -a  # export everything the credentials file defines
 # shellcheck source=/dev/null  # (the file exists only on the server)
 
 source "$RESTIC_ENV"
+export RESTIC_CACHE_DIR=${RESTIC_CACHE_DIR:-/var/cache/restic}
 
 set +a
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"; compose exec -T db dropdb -U planner --if-exists "$SCRATCH_DB" || true' EXIT

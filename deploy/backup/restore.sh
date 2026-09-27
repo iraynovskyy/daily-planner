@@ -14,6 +14,7 @@ if [[ $dump == latest ]]; then
   set -a  # export everything the credentials file defines
   # shellcheck source=/dev/null  # (the file exists only on the server)
   source "$RESTIC_ENV"
+  export RESTIC_CACHE_DIR=${RESTIC_CACHE_DIR:-/var/cache/restic}
   set +a
   path=$(restic ls latest --host apps-1 --tag daily-planner | grep '\.dump$' | tail -1)
   restic dump latest --host apps-1 --tag daily-planner "$path" > "$tmp/restore.dump"
