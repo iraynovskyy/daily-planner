@@ -14,10 +14,26 @@
 
 {% for category, habits in groups %}
 <section class="category">
-  <form method="post" action="/categories/{{ category.id }}" role="group" class="category-rename">
-    <input name="name" value="{{ category.name }}" required maxlength="50" aria-label="Category name">
-    <button type="submit" class="secondary outline">Rename</button>
-  </form>
+  <div class="category-tools">
+    <form method="post" action="/categories/{{ category.id }}" role="group" class="category-rename">
+      <input name="name" value="{{ category.name }}" required maxlength="50" aria-label="Category name">
+      <button type="submit" class="secondary outline">Rename</button>
+    </form>
+    {% if categories | length > 1 %}
+    {# Habits are never deleted with their category: they move, history included. #}
+    <form method="post" action="/categories/{{ category.id }}/delete" role="group" class="category-delete"
+          data-confirm="Delete the “{{ category.name }}” category?{% if habits %} Its {{ habits | length }} habit(s) and their history will move to the chosen category.{% endif %}">
+      {% if habits %}
+      <select name="move_to" aria-label="Move its habits to" required>
+        {% for c in categories if c.id != category.id %}
+          <option value="{{ c.id }}">Move habits to {{ c.name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      <button type="submit" class="secondary outline">Delete</button>
+    </form>
+    {% endif %}
+  </div>
 
   <div data-reorder>
   {% for h in habits %}
@@ -37,6 +53,10 @@
         <button class="{{ 'secondary' if h.active else '' }} outline">
           {{ 'Deactivate' if h.active else 'Activate' }}
         </button>
+      </form>
+      <form method="post" action="/habits/{{ h.id }}/delete"
+            data-confirm="Delete “{{ h.name }}” and all its history for good? (Deactivate hides it but keeps the history.)">
+        <button class="secondary outline">Delete</button>
       </form>
     </div>
   </article>
@@ -62,4 +82,11 @@
   <input name="name" required maxlength="50" placeholder="e.g. Health" aria-label="Category name">
   <button type="submit">Add</button>
 </form>
+<script>
+  // Ask before submitting forms that carry a data-confirm message (habit / category delete).
+  document.addEventListener("submit", (e) => {
+    const msg = e.target.dataset.confirm;
+    if (msg && !confirm(msg)) e.preventDefault();
+  });
+</script>
 {% endblock %}

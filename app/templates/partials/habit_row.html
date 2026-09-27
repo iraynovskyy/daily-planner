@@ -6,6 +6,7 @@
     <span class="habit-title">{{ h.name }}</span>
     {%- if h.unit %} <small class="habit-unit">· {{ h.target_count if h.target_count > 1 else "" }} {{ h.unit }}</small>{% endif %}
     {% if h.optional %}<span class="optional-tag">optional</span>{% endif %}
+    {% include "partials/streak.html" %}
   </span>
   <span class="habit-checks">
     {% for k in range(1, h.target_count + 1) %}

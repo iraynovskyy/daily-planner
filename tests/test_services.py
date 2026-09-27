@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, timedelta
 
+import pytest
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from app import services
@@ -222,3 +223,52 @@ def test_seed_reads_the_given_file(tmp_path):
             True,
         )
         assert [n.text for n in services.list_notes(s, "idea")] == ["Hello"]
+
+
+def test_streaks(session):
+    food = services.list_habits(session)[1]  # 3 checks a day
+    for back in (0, 1, 2, 5, 6, 7, 8):
+        services.set_count(session, 1, DAY - timedelta(days=back), 1)
+    services.set_count(session, food.id, DAY - timedelta(days=1), 3)
+    services.set_count(session, food.id, DAY, 2)  # not all 3: today doesn't count yet
+    streaks = services.streaks(session, DAY)
+    assert streaks[1] == services.Streak(current=3, best=4)
+    # An unfinished today keeps yesterday's run alive...
+    assert streaks[food.id] == services.Streak(current=1, best=1)
+    # ...but a missed yesterday ends it; later days are ignored.
+    assert services.streaks(session, DAY + timedelta(days=2))[1].current == 0
+    assert services.streaks(session, DAY - timedelta(days=5))[1] == services.Streak(4, 4)
+    assert services.streaks(session, DAY, food.id) == {food.id: streaks[food.id]}
+    assert 3 not in streaks  # never done
+
+
+def test_delete_category(session):
+    base, career, good = services.list_categories(session)
+    services.set_count(session, 6, DAY, 1)  # Learning videos (Career) has history
+    empty = services.create_category(session, "Empty")
+    assert services.delete_category(session, empty.id) is not None
+
+    with pytest.raises(ValueError):
+        services.delete_category(session, career.id)  # has habits, no target
+    with pytest.raises(ValueError):
+        services.delete_category(session, career.id, career.id)
+    assert services.delete_category(session, career.id, 99) is None
+    assert services.delete_category(session, 99) is None
+
+    services.delete_category(session, career.id, base.id)
+    names = [h.name for h in services.list_habits(session) if h.category_id == base.id]
+    assert names[-4:] == ["Learning videos", "Side project", "Deep work", "Ship something small"]
+    assert [c.name for c in services.list_categories(session)] == ["Base", "Good habits"]
+    assert services.get_day(session, DAY)[5].entry.count_done == 1  # history kept
+
+    services.delete_category(session, good.id, base.id)
+    with pytest.raises(ValueError):
+        services.delete_category(session, base.id)  # last one stays
+
+
+def test_delete_habit_removes_history(session):
+    services.set_count(session, 1, DAY, 1)
+    assert services.delete_habit(session, 1) is not None
+    assert services.delete_habit(session, 1) is None
+    assert 1 not in {h.id for h in services.list_habits(session)}
+    assert session.exec(select(DailyEntry).where(DailyEntry.habit_id == 1)).first() is None

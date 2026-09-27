@@ -41,6 +41,17 @@ body > main.container { padding-block: 0 2rem; }
 .category-head .progress-bar { flex: 1; margin: 0; }
 .category-rename { max-width: 28rem; }
 .category-rename input { font-weight: 700; }
+.category-tools { display: flex; flex-wrap: wrap; gap: 0 1rem; }
+.category-tools .category-rename { flex: 1 1 18rem; }
+.category-delete { width: auto; max-width: 22rem; }
+/* Streak badge: current run of fully done days, from 5 in a row */
+.streak { margin-left: .4rem; font-size: .72rem; font-weight: 600; white-space: nowrap; color: #c2410c; }
+.streak:empty { display: none; }
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .streak { color: #fdba74; }
+}
+:root[data-theme="dark"] .streak { color: #fdba74; }
+.habit-row.done .streak:not(:empty) { display: inline-block; } /* escapes the line-through */
 .checklist { list-style: none; padding: 0; }
 .checklist li.habit-row {
   list-style: none; display: flex; align-items: center; justify-content: space-between;

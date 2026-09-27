@@ -47,6 +47,7 @@
               <span class="habit-title">{{ h.name }}</span>
               {%- if h.unit %} <small class="habit-unit">· {{ h.target_count if h.target_count > 1 else "" }} {{ h.unit }}</small>{% endif %}
               {% if h.optional %}<span class="optional-tag">optional</span>{% endif %}
+              {% include "partials/streak.html" %}
             </th>
             {% for md in g.days %}
               {% set day = md.day %}{% set item = md.items[hi] %}

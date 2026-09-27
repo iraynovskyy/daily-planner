@@ -13,6 +13,7 @@
 </div>
 {% if oob %}
   {% include "partials/day_progress.html" %}
+  {% with streak_oob=True %}{% include "partials/streak.html" %}{% endwith %}
   {% with progress_label="Overall · " %}{% include "partials/progress.html" %}{% endwith %}
   {% with progress=cat_progress, progress_id="progress-cat-" ~ category_id %}{% include "partials/progress.html" %}{% endwith %}
 {% endif %}
