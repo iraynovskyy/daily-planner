@@ -72,6 +72,19 @@ uv run python -m app.copy_data sqlite:///data/planner.db \
 docker compose start app
 ```
 
+## Backups
+Nightly at 03:30 a systemd timer runs [`deploy/backup/backup.sh`](deploy/backup/backup.sh):
+1. `pg_dump` of the database, checked with `pg_restore --list`, kept on the server for 14 days;
+2. an encrypted, deduplicated off-site copy with **restic** in Cloudflare R2 (S3 API):
+   30 daily, 12 weekly and 24 monthly snapshots, then `restic check`.
+
+```bash
+sudo deploy/backup/setup-r2.sh            # once: R2 credentials + restic password (interactive)
+sudo systemctl start daily-planner-backup # run a backup now
+sudo deploy/backup/verify-restore.sh      # restore the latest off-site copy into a scratch DB and compare
+sudo deploy/backup/restore.sh latest      # disaster recovery: replace the live DB (asks to confirm)
+```
+
 ## Security
 | Concern | How it's handled |
 |---|---|
@@ -118,12 +131,13 @@ seed.example.toml  default categories, habits and notes for a fresh database
 tests/             pytest: services, routes, auth / security, data copy
 Dockerfile         multi-stage image built with uv
 compose.yml        local stack: app + PostgreSQL
+deploy/backup/     backup, restore and restore-check scripts + systemd timer
 ```
 
 ## Roadmap
 - [x] PostgreSQL + Docker Compose
 - [x] Login (hashed passwords, secure sessions, CSRF, rate limiting)
 - [ ] Deploy to a VPS behind Nginx with HTTPS, automated from GitHub Actions
-- [ ] Database backups to S3
+- [x] Database backups: nightly pg_dump + restic to Cloudflare R2 (S3 API), restore check
 - [ ] Health check, uptime monitoring and error tracking
 - [ ] Public demo instance with sample data

@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly daily-planner database backup
+
+[Timer]
+# 03:30 local time, before the 04:30 automatic-reboot window; catches up after downtime.
+OnCalendar=*-*-* 03:30
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
