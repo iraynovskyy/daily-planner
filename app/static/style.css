@@ -435,3 +435,53 @@ body { transition: background-color .25s, color .25s; }
   background: transparent; color: var(--pico-muted-color); border: 1px solid var(--pico-muted-border-color);
 }
 .logout:hover { color: var(--pico-color); border-color: var(--pico-muted-color); }
+
+/* Golden day: a habit's box double-tapped (static/golden.js). Gold star + slow shine. */
+/* No double-tap zoom on phones, so the second tap reaches the box. */
+.habit-checks input[type=checkbox], .cell input[type=checkbox] { touch-action: manipulation; }
+:root {
+  --gold-light: #fff4c2; --gold: #f5c542; --gold-deep: #d18a00; --gold-text: #8a5a00;
+  --gold-glow: rgba(245, 197, 66, .55);
+  --gold-shine: linear-gradient(115deg, var(--gold-deep) 0%, var(--gold) 35%, var(--gold-light) 50%, var(--gold) 65%, var(--gold-deep) 100%);
+  --gold-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%235c3b00' d='M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z'/%3E%3C/svg%3E");
+}
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --gold-text: #f7cf5c; --gold-glow: rgba(245, 197, 66, .4); }
+}
+:root[data-theme="dark"] { --gold-text: #f7cf5c; --gold-glow: rgba(245, 197, 66, .4); }
+
+.golden input[type=checkbox]:checked,
+.golden input[type=checkbox]:checked:focus {
+  --pico-border-color: var(--gold-deep);
+  background-color: var(--gold);
+  background-image: var(--gold-star), var(--gold-shine);
+  background-size: .8em auto, 300% 100%;
+  background-position: center, 100% 0;
+  background-repeat: no-repeat;
+  box-shadow: 0 0 0 1px rgba(209, 138, 0, .35), 0 0 10px var(--gold-glow);
+  animation: gold-shine 4s ease-in-out infinite;
+}
+/* Multi-check segments are too narrow for a star: shine only, glowing as one bar. */
+.cell.multi.golden input[type=checkbox]:checked {
+  background-image: var(--gold-shine); background-size: 300% 100%; background-position: 100% 0;
+  box-shadow: 0 0 8px var(--gold-glow); animation-name: gold-shine-bar;
+}
+@keyframes gold-shine { 0%, 100% { background-position: center, 100% 0; } 50% { background-position: center, 0% 0; } }
+@keyframes gold-shine-bar { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
+
+/* Day view: the whole row gets a gold edge, and the name stays readable instead of struck through. */
+.checklist li.habit-row.golden {
+  box-shadow: inset 3px 0 0 var(--gold), var(--pico-card-box-shadow);
+  background-image: linear-gradient(90deg, rgba(245, 197, 66, .12), transparent 45%);
+}
+.habit-row.golden .habit-name { text-decoration: none; opacity: 1; }
+.habit-row.golden .habit-title { color: var(--gold-text); }
+
+/* Just turned gold (only on the click's response, not on page load): a small pop. */
+.gold-pop input[type=checkbox]:checked { animation: gold-pop .45s cubic-bezier(.3, 1.6, .5, 1), gold-shine 4s ease-in-out .45s infinite; }
+.cell.multi.gold-pop input[type=checkbox]:checked { animation: gold-pop .45s cubic-bezier(.3, 1.6, .5, 1), gold-shine-bar 4s ease-in-out .45s infinite; }
+@keyframes gold-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .golden input[type=checkbox]:checked, .gold-pop input[type=checkbox]:checked { animation: none; }
+}

@@ -46,6 +46,8 @@ class DailyEntry(SQLModel, table=True):
     habit_id: int = Field(foreign_key="habit.id", index=True)
     date: dt.date = Field(index=True)
     count_done: int = 0
+    # A day the habit went beyond its target: shown as a gold star. Only kept while done.
+    golden: bool = False
     updated_at: dt.datetime = Field(default_factory=_now)
 
 

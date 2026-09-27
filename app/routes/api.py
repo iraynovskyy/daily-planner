@@ -23,10 +23,11 @@ def set_entry(
     session: SessionDep,
     user: UserDep,
     view: Annotated[Literal["day", "month"], Form()] = "day",
+    golden: Annotated[bool | None, Form()] = None,
 ):
-    """HTMX endpoint: saves the count and returns the re-rendered row/cell + progress
-    (overall and for the habit's category)."""
-    item = services.set_count(session, user, habit_id, day, count)
+    """HTMX endpoint: saves the count (and gold mark) and returns the re-rendered row/cell +
+    progress (overall and for the habit's category)."""
+    item = services.set_count(session, user, habit_id, day, count, golden)
     if item is None:
         raise HTTPException(404, "Habit not found")
     category_id = item.habit.category_id
