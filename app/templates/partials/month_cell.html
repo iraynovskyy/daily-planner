@@ -1,13 +1,14 @@
 {% set h = item.habit %}{% set n = item.entry.count_done %}
 {# Several checks per day render as one row of joined segments, so every grid row has the same height. #}
-<div class="cell{% if item.done %} done{% endif %}{% if h.target_count > 1 %} multi{% endif %}" id="cell-{{ h.id }}-{{ day.isoformat() }}"
-     style="--n: {{ h.target_count }}">
+<div class="cell{% if item.done %} done{% endif %}{% if item.golden %} golden{% if oob %} gold-pop{% endif %}{% endif %}{% if h.target_count > 1 %} multi{% endif %}" id="cell-{{ h.id }}-{{ day.isoformat() }}"
+     style="--n: {{ h.target_count }}" title="Double-tap for a golden day ★">
   {% for k in range(1, h.target_count + 1) %}
-    {# Same rule as the day view: a checked box un-checks from itself; an unchecked box fills up to it. #}
-    <input type="checkbox" aria-label="{{ h.name }} {{ day.isoformat() }} {{ k }}/{{ h.target_count }}"
+    {# Same rules as the day view: fill up to / un-check from the box; a double-tap makes it golden. #}
+    <input type="checkbox" aria-label="{{ h.name }} {{ day.isoformat() }} {{ k }}/{{ h.target_count }}{% if item.golden %} (golden){% endif %}"
            {% if k <= n %}checked{% endif %}
            hx-post="/entries/{{ h.id }}/{{ day.isoformat() }}"
            hx-vals='{"count": {{ k - 1 if k <= n else k }}, "view": "month"}'
+           data-gold-key="{{ h.id }}/{{ day.isoformat() }}" data-gold-count="{{ h.target_count }}"
            hx-target="#cell-{{ h.id }}-{{ day.isoformat() }}" hx-swap="outerHTML">
   {% endfor %}
 </div>

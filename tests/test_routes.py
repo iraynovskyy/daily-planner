@@ -221,3 +221,22 @@ def test_habit_delete(client):
     assert r.status_code == 200 and "Run" not in r.text
     assert 'id="habit-3"' not in client.get("/day/2026-09-27").text
     assert client.post("/habits/3/delete").status_code == 404
+
+
+def test_golden_day(client):
+    # A single tap on a checked box still un-checks it straight away.
+    client.post("/entries/3/2026-09-27", data={"count": 1})
+    r = client.post("/entries/3/2026-09-27", data={"count": 0})
+    assert 'class="habit-row" id="habit-3"' in r.text
+    # The double-tap request (sent by golden.js) marks it done + gold.
+    r = client.post("/entries/3/2026-09-27", data={"count": 1, "golden": "true"})
+    assert 'class="habit-row done golden gold-pop" id="habit-3"' in r.text  # pops on the tap
+    assert 'data-gold-key="3/2026-09-27" data-gold-count="1"' in r.text
+    page = client.get("/day/2026-09-27").text
+    assert 'class="habit-row done golden" id="habit-3"' in page  # no pop on page load
+    assert "/static/golden.js" in page
+    month = client.get("/month/2026-09").text
+    assert 'class="cell done golden" id="cell-3-2026-09-27"' in month
+    # One tap on a golden day un-checks it.
+    r = client.post("/entries/3/2026-09-27", data={"count": 0, "view": "month"})
+    assert 'class="cell" id="cell-3-2026-09-27"' in r.text

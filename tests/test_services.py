@@ -278,3 +278,16 @@ def test_delete_habit_removes_history(session):
     assert services.delete_habit(session, USER, 1) is None
     assert 1 not in {h.id for h in services.list_habits(session, USER)}
     assert session.exec(select(DailyEntry).where(DailyEntry.habit_id == 1)).first() is None
+
+
+def test_golden_day(session):
+    food = services.list_habits(session, USER)[1]  # 3 checks a day
+    assert not services.set_count(session, USER, food.id, DAY, 3).golden
+    item = services.set_count(session, USER, food.id, DAY, 3, golden=True)
+    assert item.golden and services.progress([item]) == 100
+    # A double-tap's plain "all done" request doesn't undo the gold, whichever arrives last.
+    assert services.set_count(session, USER, food.id, DAY, 3).golden
+    # Un-checking anything ends the golden day; checking again starts plain.
+    assert not services.set_count(session, USER, food.id, DAY, 2).golden
+    assert not services.set_count(session, USER, food.id, DAY, 3).golden
+    assert not services.set_count(session, USER, food.id, DAY, 2, golden=True).golden

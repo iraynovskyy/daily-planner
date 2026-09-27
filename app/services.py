@@ -25,6 +25,10 @@ class DayItem:
     def done(self) -> bool:
         return self.entry.count_done >= self.habit.target_count
 
+    @property
+    def golden(self) -> bool:
+        return self.done and self.entry.golden
+
 
 @dataclass
 class MonthDay:
@@ -226,13 +230,23 @@ def get_month(
 
 
 def set_count(
-    session: Session, user_id: int, habit_id: int, day: date, count: int
+    session: Session,
+    user_id: int,
+    habit_id: int,
+    day: date,
+    count: int,
+    golden: bool | None = None,
 ) -> DayItem | None:
+    """Stores the checks for a day. Gold sticks only while the habit is fully done; `golden=None`
+    keeps the current mark, so a double-tap's two requests end up gold in either order."""
     habit = _owned(session, Habit, habit_id, user_id)
     if habit is None:
         return None
     entry = _get_or_create_entry(session, habit_id, day)
     entry.count_done = max(0, min(count, habit.target_count))
+    if golden is not None:
+        entry.golden = golden
+    entry.golden = entry.golden and entry.count_done == habit.target_count
     entry.updated_at = datetime.now(UTC)
     session.commit()
     session.refresh(entry)

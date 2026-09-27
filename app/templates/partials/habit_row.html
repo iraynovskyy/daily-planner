@@ -1,5 +1,5 @@
 {% set h = item.habit %}{% set n = item.entry.count_done %}
-<li class="habit-row{% if item.done %} done{% endif %}{% if h.optional %} optional{% endif %}" id="habit-{{ h.id }}"
+<li class="habit-row{% if item.done %} done{% endif %}{% if item.golden %} golden{% if oob %} gold-pop{% endif %}{% endif %}{% if h.optional %} optional{% endif %}" id="habit-{{ h.id }}"
     data-habit-id="{{ h.id }}"{% if h.optional %} data-optional{% endif %}{% if h.highlight %} data-hl="{{ h.highlight }}"{% endif %}>
   <span class="habit-name">
     <button type="button" class="drag-handle" aria-label="Move {{ h.name }}: drag, or focus and press ↑/↓" title="Drag to reorder">⠿</button>
@@ -8,13 +8,15 @@
     {% if h.optional %}<span class="optional-tag">optional</span>{% endif %}
     {% include "partials/streak.html" %}
   </span>
-  <span class="habit-checks">
+  <span class="habit-checks" title="Double-tap for a golden day ★">
     {% for k in range(1, h.target_count + 1) %}
-      {# Clicking a checked box un-checks it and everything after; an unchecked box fills up to it. #}
-      <input type="checkbox" aria-label="{{ h.name }} {{ k }}/{{ h.target_count }}"
+      {# Clicking a checked box un-checks it and everything after; an unchecked box fills up to it.
+         A double-tap makes the day golden instead (static/golden.js). #}
+      <input type="checkbox" aria-label="{{ h.name }} {{ k }}/{{ h.target_count }}{% if item.golden %} (golden){% endif %}"
              {% if k <= n %}checked{% endif %}
              hx-post="/entries/{{ h.id }}/{{ day.isoformat() }}"
              hx-vals='{"count": {{ k - 1 if k <= n else k }}}'
+             data-gold-key="{{ h.id }}/{{ day.isoformat() }}" data-gold-count="{{ h.target_count }}"
              hx-target="#habit-{{ h.id }}" hx-swap="outerHTML">
     {% endfor %}
   </span>
