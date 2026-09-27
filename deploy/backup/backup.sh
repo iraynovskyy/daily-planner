@@ -15,7 +15,7 @@ log() { echo "[backup] $*"; }
 
 umask 077
 mkdir -p "$LOCAL_DIR"
-dump="$LOCAL_DIR/planner_$(date +%Y-%m-%d_%H%M).dump"
+dump="$LOCAL_DIR/planner_$(date +%Y-%m-%d_%H%M%S).dump"
 
 log "dumping database → $dump"
 compose exec -T db pg_dump -U planner -d planner --format=custom --no-owner > "$dump.partial"
