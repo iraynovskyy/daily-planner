@@ -28,6 +28,7 @@ def set_entry(
     if item is None:
         raise HTTPException(404, "Habit not found")
     category_id = item.habit.category_id
+    streaks = services.streaks(session, date.today(), habit_id)
     if view == "month":
         habits, days = services.get_month(session, day.year, day.month)
         group = next(
@@ -45,6 +46,7 @@ def set_entry(
                 "day_progress": group.days[day.day - 1].progress,
                 "cat_progress": group.progress,
                 "progress": services.progress([i for d in days for i in d.items]),
+                "streaks": streaks,
                 "oob": True,
             },
         )
@@ -59,6 +61,7 @@ def set_entry(
                 [i for i in items if i.habit.category_id == category_id]
             ),
             "progress": services.progress(items),
+            "streaks": streaks,
             "oob": True,
         },
     )
@@ -121,6 +124,13 @@ def set_habit_active(habit_id: int, active: Annotated[bool, Form()], session: Se
     return RedirectResponse("/habits", status_code=303)
 
 
+@router.post("/habits/{habit_id}/delete")
+def delete_habit(habit_id: int, session: SessionDep):
+    if services.delete_habit(session, habit_id) is None:
+        raise HTTPException(404, "Habit not found")
+    return RedirectResponse("/habits", status_code=303)
+
+
 @router.post("/categories")
 def create_category(name: Annotated[str, Form(min_length=1, max_length=50)], session: SessionDep):
     services.create_category(session, name)
@@ -132,6 +142,20 @@ def rename_category(
     category_id: int, name: Annotated[str, Form(min_length=1, max_length=50)], session: SessionDep
 ):
     if services.rename_category(session, category_id, name) is None:
+        raise HTTPException(404, "Category not found")
+    return RedirectResponse("/habits", status_code=303)
+
+
+@router.post("/categories/{category_id}/delete")
+def delete_category(
+    category_id: int, session: SessionDep, move_to: Annotated[int | None, Form()] = None
+):
+    """Removes a category; if it still has habits they (and their history) move to `move_to`."""
+    try:
+        category = services.delete_category(session, category_id, move_to)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from None
+    if category is None:
         raise HTTPException(404, "Category not found")
     return RedirectResponse("/habits", status_code=303)
 

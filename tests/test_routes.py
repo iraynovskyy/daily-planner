@@ -1,3 +1,6 @@
+from datetime import date, timedelta
+
+
 def test_index_redirects_to_current_month(client):
     r = client.get("/", follow_redirects=False)
     assert r.status_code == 307 and r.headers["location"].startswith("/month/")
@@ -182,3 +185,39 @@ def test_category_icon_only_on_timeline_title(client):
 def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200 and r.json() == {"status": "ok"}
+
+
+def test_category_delete(client):
+    page = client.get("/habits").text
+    assert page.count('class="category-delete"') == 3 and "Move habits to Career" in page
+    assert client.post("/categories/2/delete").status_code == 400  # has habits
+    assert client.post("/categories/99/delete").status_code == 404
+    r = client.post("/categories/2/delete", data={"move_to": 1})
+    assert r.status_code == 200 and "Career" not in r.text
+    assert "Deep work" in client.get("/day/2026-09-27").text
+    client.post("/categories/3/delete", data={"move_to": 1})
+    assert 'class="category-delete"' not in client.get("/habits").text  # last category
+    assert client.post("/categories/1/delete").status_code == 400
+
+
+def test_streak_badge(client):
+    today = date.today()
+    for back in range(1, 5):
+        client.post(f"/entries/3/{today - timedelta(days=back)}", data={"count": 1})
+    # 4 in a row: no badge yet (it starts at 5).
+    assert '<span class="streak" id="streak-3"></span>' in client.get(f"/day/{today}").text
+    # Checking today updates the badge: inside the row (day) or out-of-band (month).
+    r = client.post(f"/entries/3/{today}", data={"count": 1})
+    assert 'id="streak-3" title="5 days in a row · best 5">🔥 5' in r.text
+    assert 'id="streak-3" title="5 days' in client.get(f"/month/{today:%Y-%m}").text
+    r = client.post(f"/entries/3/{today}", data={"count": 0, "view": "month"})
+    assert '<span class="streak" id="streak-3" hx-swap-oob="true"></span>' in r.text
+
+
+def test_habit_delete(client):
+    client.post("/entries/3/2026-09-27", data={"count": 1})
+    assert client.get("/habits").text.count('data-confirm="Delete “') == 12
+    r = client.post("/habits/3/delete")
+    assert r.status_code == 200 and "Run" not in r.text
+    assert 'id="habit-3"' not in client.get("/day/2026-09-27").text
+    assert client.post("/habits/3/delete").status_code == 404

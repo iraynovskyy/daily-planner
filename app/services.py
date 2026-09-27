@@ -1,7 +1,7 @@
 import calendar
 import tomllib
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from sqlmodel import Session, col, select
@@ -44,6 +44,12 @@ class CategoryDay:
     @property
     def progress(self) -> int:
         return progress(self.items)
+
+
+@dataclass
+class Streak:
+    current: int
+    best: int
 
 
 @dataclass
@@ -208,6 +214,34 @@ def set_count(session: Session, habit_id: int, day: date, count: int) -> DayItem
     return DayItem(habit, entry)
 
 
+def streaks(session: Session, today: date, habit_id: int | None = None) -> dict[int, Streak]:
+    """Days in a row each habit was fully done, by habit id (habits never done are missing).
+
+    `current` ends today, or yesterday while today isn't done yet (an unfinished today doesn't
+    break it); `best` is the longest run up to today. `habit_id` limits it to one habit.
+    """
+    stmt = (
+        select(DailyEntry.habit_id, DailyEntry.date)
+        .join(Habit, col(Habit.id) == col(DailyEntry.habit_id))
+        .where(col(DailyEntry.count_done) >= col(Habit.target_count), DailyEntry.date <= today)
+        .order_by(col(DailyEntry.habit_id), col(DailyEntry.date))
+    )
+    if habit_id is not None:
+        stmt = stmt.where(DailyEntry.habit_id == habit_id)
+    days: dict[int, list[date]] = {}
+    for hid, day in session.exec(stmt):
+        days.setdefault(hid, []).append(day)
+    result = {}
+    for hid, dates in days.items():
+        run = best = 0
+        for prev, day in zip([None, *dates], dates, strict=False):
+            run = run + 1 if prev is not None and day - prev == timedelta(days=1) else 1
+            best = max(best, run)
+        current = run if dates[-1] >= today - timedelta(days=1) else 0
+        result[hid] = Streak(current, best)
+    return result
+
+
 def progress(items: list[DayItem]) -> int:
     """Completion % of required habits; optional ones are ignored."""
     items = [i for i in items if not i.habit.optional]
@@ -278,6 +312,19 @@ def set_active(session: Session, habit_id: int, active: bool) -> Habit | None:
     return habit
 
 
+def delete_habit(session: Session, habit_id: int) -> Habit | None:
+    """Removes a habit for good, together with all its history (see set_active to keep it)."""
+    habit = session.get(Habit, habit_id)
+    if habit is None:
+        return None
+    for entry in session.exec(select(DailyEntry).where(DailyEntry.habit_id == habit_id)):
+        session.delete(entry)
+    session.flush()  # entries go before the habit row (FK)
+    session.delete(habit)
+    session.commit()
+    return habit
+
+
 def reorder_habits(session: Session, habit_ids: list[int]) -> bool:
     """Stores a new order for habits of one category (as dragged in the UI).
 
@@ -307,6 +354,34 @@ def create_category(session: Session, name: str) -> Category:
     session.add(category)
     session.commit()
     session.refresh(category)
+    return category
+
+
+def delete_category(
+    session: Session, category_id: int, move_to: int | None = None
+) -> Category | None:
+    """Deletes a category; its habits (with their history) move to the end of `move_to`.
+
+    None if either category is unknown. ValueError if it is the last category, or it still has
+    habits and `move_to` is missing or the category itself.
+    """
+    category = session.get(Category, category_id)
+    if category is None or (move_to is not None and session.get(Category, move_to) is None):
+        return None
+    if len(list_categories(session)) == 1:
+        raise ValueError("The last category can't be deleted")
+    habits = list_habits(session)
+    moved = [h for h in habits if h.category_id == category_id]
+    if moved:
+        if move_to is None or move_to == category_id:
+            raise ValueError("Choose another category for its habits")
+        end = max(h.sort_order for h in habits) + 1
+        for i, h in enumerate(moved):  # keeps their order, at the end of the new category
+            h.category_id = move_to
+            h.sort_order = end + i
+        session.flush()  # habits leave before the category row goes (FK)
+    session.delete(category)
+    session.commit()
     return category
 
 
