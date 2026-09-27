@@ -7,7 +7,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
-from app import db, main, services
+from app import auth, db, main, services
 from app.config import BASE_DIR, settings
 from app.db import get_session
 
@@ -43,10 +43,20 @@ def session(engine) -> Iterator[Session]:
         yield s
 
 
+USERNAME, PASSWORD = "tester", "correct horse battery"
+
+
+@pytest.fixture(autouse=True)
+def fresh_login_limiter():
+    auth.login_limiter.reset()
+
+
 @pytest.fixture
-def client(engine, session, monkeypatch) -> Iterator[TestClient]:
+def anon_client(engine, session, monkeypatch) -> Iterator[TestClient]:
+    """A visitor who isn't logged in (a user account exists)."""
     monkeypatch.setattr(main, "engine", engine)
     monkeypatch.setattr(db, "engine", engine)
+    auth.create_user(session, USERNAME, PASSWORD)
 
     def _session() -> Iterator[Session]:
         with Session(engine) as s:
@@ -56,3 +66,13 @@ def client(engine, session, monkeypatch) -> Iterator[TestClient]:
     with TestClient(main.app) as c:
         yield c
     main.app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(anon_client) -> TestClient:
+    """Logged in, so every planner page and endpoint is reachable."""
+    r = anon_client.post(
+        "/login", data={"username": USERNAME, "password": PASSWORD}, follow_redirects=False
+    )
+    assert r.status_code == 303
+    return anon_client

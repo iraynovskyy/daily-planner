@@ -406,3 +406,15 @@ body { transition: background-color .25s, color .25s; }
 .theme-toggle .icon-moon { display: none; }
 :root[data-theme="light"] .theme-toggle .icon-sun { display: none; }
 :root[data-theme="light"] .theme-toggle .icon-moon { display: block; }
+
+/* Login page and the header's log-out button */
+.login-card { max-width: 24rem; margin: 3rem auto; }
+.login-card h2 { margin-bottom: 1rem; }
+.login-error { color: var(--pico-del-color); margin-bottom: .75rem; }
+.login-hint { font-size: .85rem; color: var(--pico-muted-color); }
+.logout-form { margin: 0; }
+.logout {
+  margin: 0; padding: .3rem .8rem; font-size: .85rem; width: auto;
+  background: transparent; color: var(--pico-muted-color); border: 1px solid var(--pico-muted-border-color);
+}
+.logout:hover { color: var(--pico-color); border-color: var(--pico-muted-color); }

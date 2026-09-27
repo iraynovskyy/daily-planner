@@ -42,6 +42,13 @@ uv run uvicorn app.main:app --reload      # http://localhost:8000
 ```
 Data lives in `data/planner.db`, so it survives restarts.
 
+Everything is behind a login. Create your user once (the password is asked, not typed as an
+argument, so it stays out of shell history), then log in at `/login`:
+```bash
+uv run python -m app.create_user <username>           # --reset to change the password
+docker compose exec app python -m app.create_user <username>   # same, inside Docker
+```
+
 A fresh database is filled once from [`seed.example.toml`](seed.example.toml). To start with your
 own habits and notes, copy it to `seed.local.toml` (git-ignored) and edit it, or point `SEED_FILE`
 at another file.
@@ -65,6 +72,17 @@ uv run python -m app.copy_data sqlite:///data/planner.db \
 docker compose start app
 ```
 
+## Security
+| Concern | How it's handled |
+|---|---|
+| Passwords | argon2id hashes with a random salt each (`argon2-cffi`); plain passwords are never stored |
+| Sessions | signed cookie (`SECRET_KEY`), `HttpOnly`, `SameSite=Lax`, `Secure` with `SESSION_HTTPS_ONLY=true`; renewed on login |
+| Access | every planner router requires a login; only `/login`, `/health` and `/static` are public |
+| CSRF | `SameSite=Lax` + rejecting POSTs whose `Sec-Fetch-Site` / `Origin` show another site — covers forms, HTMX and `fetch()` without per-form tokens |
+| Brute force | 5 failed logins per 15 min per IP and per username, then HTTP 429 |
+| User enumeration | same message and same work (a dummy hash check) for unknown users and wrong passwords |
+| Open redirects | `?next=` accepts only local paths (no `//host`, `\\`, control characters) |
+
 ## Develop
 ```bash
 uv run pre-commit install                 # once: lint + format on every commit
@@ -84,24 +102,27 @@ SQLite and PostgreSQL, and builds the Docker image — on every push and pull re
 ```
 app/
   main.py          app factory, static files, routers
+  auth.py          password hashing, login rate limiting, CSRF middleware
+  create_user.py   CLI: create a user / reset a password
   copy_data.py     copy all rows between databases (SQLite → Postgres)
-  models.py        Category, Habit (recurring template), DailyEntry (progress per habit per day), Note
+  models.py        Category, Habit (recurring template), DailyEntry (progress per habit per day), Note, User
   services.py      business logic, no web code
   routes/pages.py  full pages: / (month grid), /day/…, /habits
   routes/api.py    form / HTMX endpoints that return HTML fragments
+  routes/auth.py   /login, /logout
   routes/health.py /health: liveness + database check
   templates/       Jinja HTML; partials/ are the fragments HTMX swaps in
   static/          CSS and small vanilla-JS modules (reorder, highlight, notes, timeline, rings, theme)
 migrations/        Alembic schema history
 seed.example.toml  default categories, habits and notes for a fresh database
-tests/             pytest: services, routes, data copy
+tests/             pytest: services, routes, auth / security, data copy
 Dockerfile         multi-stage image built with uv
 compose.yml        local stack: app + PostgreSQL
 ```
 
 ## Roadmap
 - [x] PostgreSQL + Docker Compose
-- [ ] Login (hashed passwords, secure sessions, CSRF)
+- [x] Login (hashed passwords, secure sessions, CSRF, rate limiting)
 - [ ] Deploy to a VPS behind Nginx with HTTPS, automated from GitHub Actions
 - [ ] Database backups to S3
 - [ ] Health check, uptime monitoring and error tracking

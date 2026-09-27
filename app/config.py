@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     # Defaults for a fresh database; None → seed.local.toml if present, else seed.example.toml.
     seed_file: Path | None = None
 
+    # Signs the session cookie: anyone who knows it can forge a login, so keep it out of git.
+    # None → a random key per process (fine locally; everyone is logged out on restart).
+    secret_key: str | None = None
+    # Send the session cookie over HTTPS only. Must be true in production.
+    session_https_only: bool = False
+    session_max_age_days: int = 30
+
     @field_validator("database_url")
     @classmethod
     def _anchor_sqlite_path(cls, url: str) -> str:

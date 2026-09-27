@@ -54,3 +54,15 @@ class Note(SQLModel, table=True):
     text: str = Field(max_length=300)
     sort_order: int = 0
     created_at: dt.datetime = Field(default_factory=_now)
+
+
+class User(SQLModel, table=True):
+    """A login. Only an argon2 hash of the password is stored, never the password."""
+
+    # "user" is a reserved word in PostgreSQL, so the table gets a less clashing name.
+    __tablename__ = "app_user"
+
+    id: int | None = Field(default=None, primary_key=True)
+    username: str = Field(max_length=50, unique=True, index=True)
+    password_hash: str = Field(max_length=200)
+    created_at: dt.datetime = Field(default_factory=_now)

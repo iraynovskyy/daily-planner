@@ -173,10 +173,6 @@ def test_multi_check_cells_are_one_row(client):
     assert 'class="cell" id="cell-1-2026-09-01"' in page  # Sport, 1 check
 
 
-def test_healthz(client):
-    assert client.get("/healthz").json() == {"status": "ok"}
-
-
 def test_category_icon_only_on_timeline_title(client):
     page = client.get("/month/2026-09").text
     assert "<summary>🧱 Base timeline</summary>" in page

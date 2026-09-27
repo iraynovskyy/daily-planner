@@ -27,9 +27,16 @@
             <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
           </button>
         </li>
+        {% if request.session.get("user_id") %}
         <li><a href="/">Month</a></li>
         <li><a href="/day/{{ today_iso() }}">Today</a></li>
         <li><a href="/habits">Habits</a></li>
+        <li>
+          <form method="post" action="/logout" class="logout-form">
+            <button type="submit" class="logout" title="Log out">Log out</button>
+          </form>
+        </li>
+        {% endif %}
       </ul>
     </nav>
   </header>

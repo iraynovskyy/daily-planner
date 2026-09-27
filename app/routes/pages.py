@@ -74,8 +74,3 @@ def habits_page(request: Request, session: SessionDep):
             "categories": services.list_categories(session),
         },
     )
-
-
-@router.get("/healthz")
-def healthz() -> dict[str, str]:
-    return {"status": "ok"}
