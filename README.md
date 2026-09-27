@@ -81,7 +81,7 @@ docker compose start app
 | CSRF | `SameSite=Lax` + rejecting POSTs whose `Sec-Fetch-Site` / `Origin` show another site — covers forms, HTMX and `fetch()` without per-form tokens |
 | Brute force | 5 failed logins per 15 min per IP and per username, then HTTP 429 |
 | User enumeration | same message and same work (a dummy hash check) for unknown users and wrong passwords |
-| Open redirects | `?next=` accepts only local paths (no `//host`, `\\`, control characters) |
+| Open redirects | `?next=` accepts only local paths (no `//host`, backslashes, control characters) |
 
 ## Develop
 ```bash
