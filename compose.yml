@@ -21,6 +21,8 @@ services:
       retries: 10
 
   app:
+    # Server: a tested image from GHCR, set by deploy/deploy.sh. Locally: built from this repo.
+    image: ${APP_IMAGE:-daily-planner:local}
     build: .
     restart: unless-stopped
     environment:

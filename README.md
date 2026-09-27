@@ -72,6 +72,19 @@ uv run python -m app.copy_data sqlite:///data/planner.db \
 docker compose start app
 ```
 
+## Deployment
+Every push to `main` goes through the same pipeline ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+
+```
+tests (SQLite + Postgres) → build image once → push to GHCR (ghcr.io/…:sha-<commit>) → deploy
+```
+The deploy job SSHes into the server with a key that can only run [`deploy/deploy.sh`](deploy/deploy.sh)
+(a forced command; the host key is pinned). The script takes a backup, pulls the tested image,
+restarts the app, waits for `/health`, and rolls back to the previous image if it doesn't come up.
+
+The server runs Nginx (HTTPS via Let's Encrypt, HTTP/2, HSTS) in front of the Compose stack; app
+and database ports are bound to localhost only.
+
 ## Backups
 Nightly at 03:30 a systemd timer runs [`deploy/backup/backup.sh`](deploy/backup/backup.sh):
 1. `pg_dump` of the database, checked with `pg_restore --list`, kept on the server for 14 days;
@@ -131,13 +144,14 @@ seed.example.toml  default categories, habits and notes for a fresh database
 tests/             pytest: services, routes, auth / security, data copy
 Dockerfile         multi-stage image built with uv
 compose.yml        local stack: app + PostgreSQL
+deploy/deploy.sh   server-side deploy: backup, pull image, health check, rollback
 deploy/backup/     backup, restore and restore-check scripts + systemd timer
 ```
 
 ## Roadmap
 - [x] PostgreSQL + Docker Compose
 - [x] Login (hashed passwords, secure sessions, CSRF, rate limiting)
-- [ ] Deploy to a VPS behind Nginx with HTTPS, automated from GitHub Actions
+- [x] Deploy to a VPS behind Nginx with HTTPS, automated from GitHub Actions
 - [x] Database backups: nightly pg_dump + restic to Cloudflare R2 (S3 API), restore check
 - [ ] Health check, uptime monitoring and error tracking
 - [ ] Public demo instance with sample data
