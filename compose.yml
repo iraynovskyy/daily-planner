@@ -27,6 +27,7 @@ services:
       DATABASE_URL: postgresql+psycopg://planner:${POSTGRES_PASSWORD}@db:5432/planner
       SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
       SESSION_HTTPS_ONLY: ${SESSION_HTTPS_ONLY:-false}
+      TZ: ${TZ:-UTC}                 # decides when "today" starts
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
