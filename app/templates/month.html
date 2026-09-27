@@ -108,7 +108,7 @@
     if (th) scroll.scrollLeft = th.offsetLeft - scroll.clientWidth / 2 + th.offsetWidth / 2;
   }
 </script>
-<script src="/static/timeline.js"></script>
-<script src="/static/rings.js"></script>
+<script src="{{ static_url('timeline.js') }}"></script>
+<script src="{{ static_url('rings.js') }}"></script>
 {% endif %}
 {% endblock %}
