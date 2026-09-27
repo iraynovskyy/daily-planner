@@ -1,15 +1,17 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlmodel import Session
 
 from app import auth
 from app.db import get_session
+from app.models import User
 from app.templating import templates
 
 router = APIRouter()
 SessionDep = Annotated[Session, Depends(get_session)]
+UserDep = Annotated[int, Depends(auth.require_user)]
 
 
 def _client_ip(request: Request) -> str:
@@ -86,3 +88,93 @@ def login(
 def logout(request: Request) -> RedirectResponse:
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
+
+
+# --- account & invites --------------------------------------------------------------------------
+
+
+def _account_page(
+    request: Request, session: Session, user: int, *, invite_token: str | None = None
+) -> Response:
+    path = request.app.url_path_for("join_form", token=invite_token) if invite_token else None
+    return templates.TemplateResponse(
+        request,
+        "account.html",
+        {
+            "user": session.get(User, user),
+            "invites": auth.pending_invites(session, user),
+            "invite_path": path,
+            "invite_url": str(request.base_url).rstrip("/") + path if path else None,
+            "invite_days": auth.INVITE_DAYS,
+        },
+    )
+
+
+@router.get("/account", response_class=HTMLResponse)
+def account(request: Request, session: SessionDep, user: UserDep) -> Response:
+    return _account_page(request, session, user)
+
+
+@router.post("/account/invites", response_class=HTMLResponse)
+def create_invite(request: Request, session: SessionDep, user: UserDep) -> Response:
+    """Shows the new link once: only its hash is stored, so it can't be displayed again."""
+    return _account_page(request, session, user, invite_token=auth.create_invite(session, user))
+
+
+@router.post("/account/invites/{invite_id}/revoke")
+def revoke_invite(invite_id: int, session: SessionDep, user: UserDep) -> RedirectResponse:
+    if not auth.revoke_invite(session, user, invite_id):
+        raise HTTPException(404, "Invite not found")
+    return RedirectResponse("/account", status_code=303)
+
+
+def _join_page(
+    request: Request,
+    session: Session,
+    token: str,
+    *,
+    error: str | None = None,
+    username: str = "",
+    status_code: int = 200,
+) -> Response:
+    valid = auth.find_invite(session, token) is not None
+    return templates.TemplateResponse(
+        request,
+        "join.html",
+        {
+            "token": token,
+            "valid": valid,
+            "error": error,
+            "username": username,
+            "min_password": auth.MIN_PASSWORD_LENGTH,
+        },
+        status_code=status_code if valid else 404,
+    )
+
+
+@router.get("/join/{token}", response_class=HTMLResponse)
+def join_form(request: Request, token: str, session: SessionDep) -> Response:
+    return _join_page(request, session, token)
+
+
+@router.post("/join/{token}")
+def join(
+    request: Request,
+    token: str,
+    session: SessionDep,
+    username: Annotated[str, Form(max_length=50)],
+    password: Annotated[str, Form(max_length=200)],
+    password_repeat: Annotated[str, Form(max_length=200)],
+) -> Response:
+    if password != password_repeat:
+        error = "Passwords don't match."
+    else:
+        try:
+            user = auth.register(session, token, username, password)
+        except ValueError as e:
+            error = str(e)
+        else:
+            request.session.clear()  # log the new user in, in a fresh session
+            request.session["user_id"] = user.id
+            return RedirectResponse("/", status_code=303)
+    return _join_page(request, session, token, error=error, username=username, status_code=400)

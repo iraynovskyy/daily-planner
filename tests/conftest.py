@@ -7,7 +7,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
-from app import auth, db, main, services
+from app import auth, db, main
 from app.config import BASE_DIR, settings
 from app.db import get_session
 
@@ -38,8 +38,9 @@ def engine() -> Iterator[Engine]:
 
 @pytest.fixture
 def session(engine) -> Iterator[Session]:
+    """Has one user (id 1, see USERNAME) who owns the example seed data."""
     with Session(engine) as s:
-        services.seed_default_habits(s)
+        auth.create_user(s, USERNAME, PASSWORD)
         yield s
 
 
@@ -54,9 +55,7 @@ def fresh_login_limiter():
 @pytest.fixture
 def anon_client(engine, session, monkeypatch) -> Iterator[TestClient]:
     """A visitor who isn't logged in (a user account exists)."""
-    monkeypatch.setattr(main, "engine", engine)
     monkeypatch.setattr(db, "engine", engine)
-    auth.create_user(session, USERNAME, PASSWORD)
 
     def _session() -> Iterator[Session]:
         with Session(engine) as s:

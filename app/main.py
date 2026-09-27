@@ -1,31 +1,19 @@
 import logging
 import secrets
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
-from sqlmodel import Session
 from starlette.middleware.sessions import SessionMiddleware
 
-from app import auth, services
+from app import auth
 from app.config import settings
-from app.db import engine
 from app.routes import api, health, pages
 from app.routes import auth as auth_routes
 
 log = logging.getLogger(__name__)
-
-
-@asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    # Schema is managed by Alembic (`alembic upgrade head`); here we only seed defaults.
-    with Session(engine) as session:
-        services.seed_default_habits(session)
-    yield
 
 
 def _secret_key() -> str:
@@ -46,9 +34,11 @@ async def _not_authenticated(request: Request, _exc: Exception) -> Response:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Daily Planner", lifespan=lifespan)
+    # Schema is managed by Alembic (`alembic upgrade head`); users get starter data on creation.
+    app = FastAPI(title="Daily Planner")
     app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
-    # Everything the planner shows or changes requires a login; /login, /health and /static don't.
+    # Everything the planner shows or changes requires a login; /login, /join/…, /health and
+    # /static don't.
     logged_in = [Depends(auth.require_user)]
     app.include_router(pages.router, dependencies=logged_in)
     app.include_router(api.router, dependencies=logged_in)

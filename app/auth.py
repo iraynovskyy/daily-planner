@@ -1,16 +1,23 @@
-"""Login: password hashing, the current-user dependency, login rate limiting and CSRF protection."""
+"""Login: password hashing, invites, the current-user dependency, login rate limiting and CSRF
+protection."""
 
+import datetime as dt
+import hashlib
+import secrets
 import time
 from collections import defaultdict, deque
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from fastapi import Request
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from app.models import User
+from app import services
+from app.config import BASE_DIR
+from app.models import Invite, User
 
 MIN_PASSWORD_LENGTH = 12
 
@@ -46,7 +53,10 @@ def authenticate(session: Session, username: str, password: str) -> User | None:
     return user
 
 
-def create_user(session: Session, username: str, password: str) -> User:
+def create_user(
+    session: Session, username: str, password: str, seed_file: Path | None = None
+) -> User:
+    """New login with its own starter categories, habits and notes (see services.seed_user)."""
     username = username.strip()
     if not username:
         raise ValueError("Username must not be empty.")
@@ -56,7 +66,8 @@ def create_user(session: Session, username: str, password: str) -> User:
         raise ValueError(f"User {username!r} already exists.")
     user = User(username=username, password_hash=hash_password(password))
     session.add(user)
-    session.commit()
+    session.flush()
+    services.seed_user(session, user.id, seed_file)  # commits the user and the seed together
     session.refresh(user)
     return user
 
@@ -74,6 +85,82 @@ def set_password(session: Session, username: str, password: str) -> None:
 
 def has_users(session: Session) -> bool:
     return session.exec(select(User.id)).first() is not None
+
+
+# --- invites ------------------------------------------------------------------------------------
+
+INVITE_DAYS = 7
+# Friends who join by invite start from the neutral example set, never the owner's local seed.
+INVITE_SEED = BASE_DIR / "seed.example.toml"
+
+
+def _token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _utc(value: dt.datetime) -> dt.datetime:
+    # SQLite hands datetimes back without a timezone; they are stored in UTC.
+    return value if value.tzinfo else value.replace(tzinfo=dt.UTC)
+
+
+def create_invite(session: Session, user_id: int) -> str:
+    """New one-time sign-up token (valid INVITE_DAYS). Returned once; only its hash is kept."""
+    token = secrets.token_urlsafe(24)
+    now = dt.datetime.now(dt.UTC)
+    session.add(
+        Invite(
+            token_hash=_token_hash(token),
+            created_by=user_id,
+            created_at=now,
+            expires_at=now + dt.timedelta(days=INVITE_DAYS),
+        )
+    )
+    session.commit()
+    return token
+
+
+def find_invite(session: Session, token: str) -> Invite | None:
+    """The invite for this token if it is still usable (not used, not expired)."""
+    invite = session.exec(select(Invite).where(Invite.token_hash == _token_hash(token))).first()
+    if invite is None or invite.used_at is not None:
+        return None
+    return invite if _utc(invite.expires_at) > dt.datetime.now(dt.UTC) else None
+
+
+def pending_invites(session: Session, user_id: int) -> list[Invite]:
+    """Unused, unexpired invites this user created, newest first."""
+    stmt = (
+        select(Invite)
+        .where(Invite.created_by == user_id, col(Invite.used_at).is_(None))
+        .order_by(col(Invite.id).desc())
+    )
+    now = dt.datetime.now(dt.UTC)
+    return [i for i in session.exec(stmt) if _utc(i.expires_at) > now]
+
+
+def revoke_invite(session: Session, user_id: int, invite_id: int) -> bool:
+    invite = session.get(Invite, invite_id)
+    if invite is None or invite.created_by != user_id or invite.used_at is not None:
+        return False
+    session.delete(invite)
+    session.commit()
+    return True
+
+
+def register(session: Session, token: str, username: str, password: str) -> User:
+    """Uses up an invite and creates the user in one transaction. ValueError if either fails."""
+    invite = find_invite(session, token)
+    if invite is None:
+        raise ValueError("This invite link is invalid, expired or already used.")
+    invite.used_at = dt.datetime.now(dt.UTC)
+    try:
+        user = create_user(session, username, password, INVITE_SEED)
+    except ValueError:
+        session.rollback()
+        raise
+    invite.used_by = user.id
+    session.commit()
+    return user
 
 
 # --- current user -------------------------------------------------------------------------------
