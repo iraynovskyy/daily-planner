@@ -1,3 +1,4 @@
+import re
 from datetime import date, timedelta
 
 
@@ -240,3 +241,11 @@ def test_golden_day(client):
     # One tap on a golden day un-checks it.
     r = client.post("/entries/3/2026-09-27", data={"count": 0, "view": "month"})
     assert 'class="cell" id="cell-3-2026-09-27"' in r.text
+
+
+def test_static_files_are_versioned(client):
+    # A content hash in the URL makes browsers load changed CSS/JS after a deploy.
+    page = client.get("/day/2026-09-27").text
+    assert re.search(r'href="/static/style\.css\?v=[0-9a-f]{10}"', page)
+    assert re.search(r'src="/static/golden\.js\?v=[0-9a-f]{10}"', page)
+    assert client.get(re.search(r'"(/static/style\.css\?v=\w+)"', page)[1]).status_code == 200
