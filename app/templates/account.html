@@ -45,4 +45,9 @@
   {% endfor %}
 </ul>
 {% endif %}
+
+{# The header's Log out is hidden on phones (tab bar instead), so it lives here there. #}
+<form method="post" action="/logout" class="mobile-only account-logout">
+  <button type="submit" class="secondary outline">Log out</button>
+</form>
 {% endblock %}

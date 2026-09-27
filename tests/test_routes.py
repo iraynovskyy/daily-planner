@@ -1,6 +1,8 @@
 import re
 from datetime import date, timedelta
 
+import pytest
+
 
 def test_index_redirects_to_current_month(client):
     r = client.get("/", follow_redirects=False)
@@ -249,3 +251,33 @@ def test_static_files_are_versioned(client):
     assert re.search(r'href="/static/style\.css\?v=[0-9a-f]{10}"', page)
     assert re.search(r'src="/static/golden\.js\?v=[0-9a-f]{10}"', page)
     assert client.get(re.search(r'"(/static/style\.css\?v=\w+)"', page)[1]).status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("url", "active"),
+    [
+        ("/month/2026-09", "Month"),
+        ("/day/2026-09-27", "Today"),
+        ("/habits", "Habits"),
+        ("/account", "Account"),
+    ],
+)
+def test_phone_tab_bar(client, url, active):
+    page = client.get(url).text
+    tabbar = page.split('<nav class="tabbar" aria-label="Main">')[1].split("</nav>")[0]
+    assert tabbar.count("<a href=") == 4
+    assert re.search(rf'aria-current="page">.*?<span>{active}</span>', tabbar, re.S)
+    assert tabbar.count('aria-current="page"') == 1
+
+
+def test_no_tab_bar_when_logged_out(anon_client):
+    assert 'class="tabbar"' not in anon_client.get("/login").text
+    assert 'class="tabbar"' not in anon_client.get("/join/not-a-token").text
+
+
+def test_phone_extras(client):
+    # Log out moves into Account on phones; the day header has a short date for them.
+    assert 'class="mobile-only account-logout"' in client.get("/account").text
+    day = client.get("/day/2026-09-27").text
+    assert '<span class="desktop-only">27 September 2026</span>' in day
+    assert '<span class="mobile-only">27 Sep</span>' in day

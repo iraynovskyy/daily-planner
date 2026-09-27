@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}Daily Planner{% endblock %}</title>
   <script>
     // Apply the saved theme before first paint (no flash); default follows the OS.
@@ -44,6 +44,19 @@
   <main class="container">
     {% block content %}{% endblock %}
   </main>
+  {% if request.session.get("user_id") %}
+  {# Phones only (hidden on wider screens by CSS): app-style tab bar within thumb reach. #}
+  {% set path = request.url.path %}
+  {% macro tab(href, label, active) -%}
+    <a href="{{ href }}"{% if active %} aria-current="page"{% endif %}>{{ caller() }}<span>{{ label }}</span></a>
+  {%- endmacro %}
+  <nav class="tabbar" aria-label="Main">
+    {% call tab("/", "Month", path.startswith("/month/")) %}<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/></svg>{% endcall %}
+    {% call tab("/day/" ~ today_iso(), "Today", path.startswith("/day/")) %}<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12.5l3 3 5-6"/></svg>{% endcall %}
+    {% call tab("/habits", "Habits", path == "/habits") %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>{% endcall %}
+    {% call tab("/account", "Account", path == "/account") %}<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></svg>{% endcall %}
+  </nav>
+  {% endif %}
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15/Sortable.min.js"></script>
   <script src="{{ static_url('reorder.js') }}"></script>
   <script src="{{ static_url('highlight.js') }}"></script>
