@@ -29,7 +29,10 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
   const today = section.dataset.today;
   const NS = "http://www.w3.org/2000/svg";
   const MAX_SLOTS = 8; // categorical palette size; colours are never cycled
-  const H = 260, M = { top: 16, right: 16, bottom: 26, left: 36 };
+  const M = { top: 16, right: 16, bottom: 26, left: 36 };
+  // Phones: start with only the overall line (six crossing lines are unreadable that narrow);
+  // tapping a habit in the legend adds its line.
+  const phone = matchMedia("(max-width: 700px)"); // same breakpoint as the phone CSS
   const hidden = new Set();
   let series = [], days = [], x = null, y = null, active = null, hover = null;
 
@@ -78,11 +81,12 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
   }
 
   function buildLegend() {
+    if (phone.matches) habits.forEach((h) => hidden.add(h.key));
     legend.replaceChildren(
       ...[overall, ...habits].map((s) => {
         const b = document.createElement("button");
         b.type = "button";
-        b.setAttribute("aria-pressed", "true");
+        b.setAttribute("aria-pressed", String(!hidden.has(s.key)));
         const key = document.createElement("span");
         key.className = "key";
         key.style.background = s.color;
@@ -100,19 +104,23 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
   function render() {
     readGrid();
     const W = svg.clientWidth || 600;
+    const H = svg.clientHeight || 260; // set in CSS (lower on phones)
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.replaceChildren();
     const visible = series.filter((s) => !hidden.has(s.key));
     const labelled = visible.length <= 4; // direct labels only while they stay readable
-    const right = labelled ? 160 : M.right;
-    const iw = W - M.left - right, ih = H - M.top - M.bottom;
+    // Phones label line ends with the value only, in the line's colour, to keep the width.
+    const narrow = phone.matches;
+    const right = labelled ? (narrow ? 44 : 160) : M.right;
+    const left = narrow ? 44 : M.left; // room for "100%" off the screen edge
+    const iw = W - left - right, ih = H - M.top - M.bottom;
     const step = iw / Math.max(days.length - 1, 1);
-    x = (i) => M.left + i * step;
+    x = (i) => left + i * step;
     y = (v) => M.top + ih - (v / 100) * ih;
 
     for (const v of [0, 50, 100]) {
-      el("line", { class: "grid", x1: M.left, x2: M.left + iw, y1: y(v), y2: y(v) });
-      el("text", { class: "axis-label", x: M.left - 8, y: y(v) + 4, "text-anchor": "end" }).textContent = v + "%";
+      el("line", { class: "grid", x1: left, x2: left + iw, y1: y(v), y2: y(v) });
+      el("text", { class: "axis-label", x: left - 8, y: y(v) + 4, "text-anchor": "end" }).textContent = v + "%";
     }
     days.forEach((d, i) => {
       if (d.date.getDate() === 1 || d.date.getDay() === 1) {
@@ -123,7 +131,7 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
 
     const lastIdx = days.reduce((last, d, i) => (d.day <= today ? i : last), -1);
     if (lastIdx < 0) {
-      el("text", { class: "empty", x: M.left + iw / 2, y: M.top + ih / 2, "text-anchor": "middle" })
+      el("text", { class: "empty", x: left + iw / 2, y: M.top + ih / 2, "text-anchor": "middle" })
         .textContent = "No progress to show yet";
       hover = null;
       return;
@@ -137,8 +145,13 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
         .map((pt, k) => (k ? "L" : "M") + pt)
         .join("");
       if (!d) continue;
+      if (s.key === "overall") {
+        // Soft fill under the overall line (shown on phones only, see CSS).
+        const pts = s.points.map((p, i) => (p.value === null ? null : i)).filter((i) => i !== null);
+        el("path", { class: "area", d: `${d}L${x(pts.at(-1))},${y(0)}L${x(pts[0])},${y(0)}Z` });
+      }
       el("path", { class: "halo", d });
-      el("path", { class: "line", d, stroke: s.color });
+      el("path", { class: s.key === "overall" ? "line overall" : "line", d, stroke: s.color });
     }
 
     if (labelled) {
@@ -151,10 +164,12 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       for (let k = 1; k < labels.length; k++) labels[k].ty = Math.max(labels[k].ty, labels[k - 1].ty + 14);
       const overflow = labels.length ? labels[labels.length - 1].ty - (M.top + ih + 4) : 0;
       if (overflow > 0) labels.forEach((l) => (l.ty -= overflow));
-      const lx = M.left + iw + 10;
+      const lx = left + iw + 10;
       for (const l of labels) {
         el("line", { class: "leader", x1: x(lastIdx) + 3, y1: l.ly, x2: lx - 2, y2: l.ty, style: `stroke: ${l.s.color}` });
-        el("text", { class: "end-label", x: lx, y: l.ty + 4 }).textContent = `${l.v}% ${l.s.name}`;
+        const label = el("text", { class: "end-label", x: lx, y: l.ty + 4 });
+        label.textContent = narrow ? `${l.v}%` : `${l.v}% ${l.s.name}`;
+        if (narrow) label.style.fill = l.s.color;
       }
     }
 

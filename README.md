@@ -14,14 +14,25 @@ HTMX — no frontend build step.
 |---|---|
 | ![Day, light theme](docs/screenshots/day-light.png) | ![Day, dark theme](docs/screenshots/day-dark.png) |
 
+**On a phone** the header links become a bottom tab bar, each habit's name sits above its checks
+so about nine days fit on screen, and charts start with the overall line (tap a habit to add its own).
+
+| Today | Month | Timeline & rings |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/phone-today.png" width="250" alt="Today's checklist on a phone, with golden days and a streak"> | <img src="docs/screenshots/phone-month.png" width="250" alt="Month grid on a phone, habit names above their checks"> | <img src="docs/screenshots/phone-stats.png" width="250" alt="Timeline with the overall and Food lines, and progress rings, on a phone"> |
+
 ## Features
 - **Categories** (e.g. Base, Career, Good habits), each with its own progress bar, month grid and timeline
 - **Multi-check habits** ("3 meals", "2 videos") and **optional** habits that are tracked but don't count towards progress
 - **Month grid**: every day at a glance; click any cell to tick it
+- **Golden days**: double-tap a habit's box when you did it especially well, and it turns into a gold star
+- **Streaks**: a 🔥 badge once a habit is done 5+ days in a row
 - **Timelines** with progress rings per category
 - **Drag-and-drop** (or keyboard) reordering and per-row highlight colours
 - **Notes** in collapsible blocks (tips, ideas, comfort), editable in place and movable between blocks
 - **Light / dark theme** switch, remembered per browser
+- **Phone layout**: bottom tab bar, compact month grid, touch-friendly charts
+- **Several users**, each with their own data; invite a friend with a one-time link
 
 ## Tech stack
 | Layer | Choice |
