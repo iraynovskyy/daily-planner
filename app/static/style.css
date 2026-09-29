@@ -528,4 +528,28 @@ body { transition: background-color .25s, color .25s; }
   body:has(.tabbar) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 
   .account-logout { margin-top: 2rem; }
+
+  /* Month grid: each habit is its name on one line and its checks on the next, so the days get
+     the whole width (~9 visible instead of 3). Every row is a grid of --days equal columns; the
+     name spans them and stays pinned at the left while the days scroll sideways. */
+  table.month { display: block; --col: 2.5rem; }
+  table.month > thead, table.month > tbody, table.month > tfoot { display: block; }
+  table.month tr { display: grid; grid-template-columns: repeat(var(--days), var(--col)); align-items: center; }
+  table.month td, table.month thead th:not(:first-child) { width: auto; min-width: 0; }
+  table.month thead th:first-child, table.month tfoot th[scope=row] { display: none; }
+  table.month th, table.month td { padding: .25rem 0; }
+  table.month tbody th[scope=row] {
+    grid-column: 1 / -1; justify-self: start; min-width: 0; max-width: calc(100vw - 2.5rem);
+    overflow: hidden; text-overflow: ellipsis; padding: .55rem .3rem 0; border-bottom: 0;
+    background: transparent; box-shadow: none;
+  }
+  table.month tbody th[scope=row] .drag-handle { margin-left: -.2rem; }
+  /* Highlight colour: tint the whole two-line row, stripe on the pinned name. */
+  table.month tr[data-hl] {
+    background: color-mix(in srgb, var(--row-hl) var(--hl-wash-grid, 14%), var(--pico-background-color));
+  }
+  table.month tr[data-hl] > th, table.month tr[data-hl] > td:not(.today) { background: transparent; }
+  table.month tr[data-hl] > th[scope=row] { box-shadow: inset 3px 0 0 var(--row-hl); }
+  /* The colour picker stays on the Today page; here its column would cost a day. */
+  table.month .hl-col { display: none; }
 }

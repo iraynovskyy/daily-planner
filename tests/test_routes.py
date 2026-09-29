@@ -284,3 +284,9 @@ def test_phone_extras(client):
     assert '<span class="mobile-only">15 Jan</span>' in day
     today = client.get(f"/day/{date.today()}").text
     assert re.search(r'<span class="mobile-only">\d{2} \w{3} · today</span>', today)
+
+
+def test_month_grid_knows_its_day_count(client):
+    # Phones lay each row out as a grid of --days columns (name on its own line above).
+    assert client.get("/month/2026-09").text.count('<table class="month" style="--days: 30">') == 3
+    assert '<table class="month" style="--days: 28">' in client.get("/month/2026-02").text
