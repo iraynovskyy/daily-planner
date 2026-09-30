@@ -45,8 +45,23 @@ log "deploying $image (previous: ${previous:-none})"
 # Compose file and ops scripts come from git; the app itself comes from the image.
 git pull --quiet --ff-only
 
+# No deploy without a fresh backup. The backup has twice failed right at its start and then
+# worked when the deploy was re-run, so give it a few tries, and log why a try failed.
 log "pre-deploy backup"
-sudo systemctl start daily-planner-backup.service
+backed_up=false
+for attempt in 1 2 3; do
+  if sudo systemctl start daily-planner-backup.service; then
+    backed_up=true
+    break
+  fi
+  log "backup attempt $attempt failed:"
+  systemctl status daily-planner-backup.service --no-pager --lines 20 || true
+  ((attempt < 3)) && sleep 20
+done
+if ! $backed_up; then
+  log "no fresh backup: not deploying (the site keeps running ${previous:-the current image})"
+  exit 1
+fi
 
 docker pull --quiet "$image" >/dev/null
 set_image "$image"
