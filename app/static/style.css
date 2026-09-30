@@ -648,6 +648,13 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
   align-items: baseline; margin: 0;
 }
 .year-habits .habit-title { font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Habits picked for Focus carry its small gold dot in the other views (the bar keeps its meaning). */
+.year-habits li.in-focus { position: relative; }
+.year-habits li.in-focus::before {
+  /* hangs just left of the name, so every name still starts on the same line */
+  content: ""; position: absolute; left: -.7rem; top: .62em; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gold-quiet);
+}
 .year-habits .cat { color: var(--pico-muted-color); font-size: .72rem; font-weight: 400; margin-left: .35rem; }
 .year-habits b { font-variant-numeric: tabular-nums; font-size: .95rem; }
 .year-habits .bar { grid-column: 1 / -1; height: 3px; border-radius: 2px; background: var(--yl0); overflow: hidden; }

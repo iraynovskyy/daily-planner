@@ -359,6 +359,12 @@ def test_year_focus_view(client):
     # Once something is picked, the page opens on Focus; All stays one tap away.
     assert 'class="focus-chip" aria-current="page"' in client.get("/year/2026").text
     all_view = client.get("/year/2026?view=all").text
+    # In All, the Focus habits (1 and 6) carry the gold dot; in Focus itself they don't need it.
+    for habit in (1, 2, 6):
+        client.post(f"/entries/{habit}/2026-09-27", data={"count": 1})
+    all_view = client.get("/year/2026?view=all").text
+    assert all_view.count(' in-focus"') == 2
+    assert "in-focus" not in client.get("/year/2026?focus=1").text
     assert 'aria-current="page">All' in all_view and 'href="/year/2025?view=all"' in all_view
     assert client.post("/habits/focus", data={"year": 2026, "ids": [999]}).status_code == 400
 

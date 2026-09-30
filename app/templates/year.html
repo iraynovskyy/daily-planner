@@ -107,7 +107,8 @@
   <h3>Most consistent habits</h3>
   <ol class="year-habits{% if collapsible %} collapsible{% endif %}" id="year-habits">
     {% for h in stats.habits %}
-    <li{% if loop.index > 3 %} class="more"{% endif %}>
+    {% set marked = h.habit.focus and not focus %}
+    <li class="{{ 'more' if loop.index > 3 }}{{ ' in-focus' if marked }}"{% if marked %} title="In Focus"{% endif %}>
       <span class="habit-title">{{ h.habit.name }}{% if h.habit.optional %} <span class="optional-tag">optional</span>{% endif %}
         {%- if not category %} <span class="cat">{{ category_names[h.habit.category_id] }}</span>{% endif %}</span>
       <b>{{ h.pct }}%</b>
