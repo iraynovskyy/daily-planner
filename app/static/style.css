@@ -536,12 +536,11 @@ body { transition: background-color .25s, color .25s; }
 }
 .year-cats a[aria-current="page"] { color: var(--pico-color); border-color: var(--pico-primary); }
 .year-cats .focus-chip { display: inline-flex; align-items: center; gap: .4rem; }
-.year-cats .focus-chip::before {
-  content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 4px var(--gold-glow);
-}
+/* A light touch of gold: a small dot, and when selected a thin gold outline and warm text. */
+.year-cats .focus-chip::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); opacity: .8; }
 .year-cats .focus-chip[aria-current="page"] {
-  color: var(--gold-text); border-color: color-mix(in srgb, var(--gold) 70%, transparent);
-  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  color: color-mix(in srgb, var(--gold-text) 65%, var(--pico-color));
+  border-color: color-mix(in srgb, var(--gold) 50%, var(--pico-muted-border-color));
 }
 .year-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin: 0 auto 1.25rem; max-width: 34rem; }
 .year-tile {
