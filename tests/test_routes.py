@@ -365,9 +365,9 @@ def test_year_focus_view(client):
 
 def test_category_icon_can_be_changed(client):
     assert 'name="icon" value="🗿"' in client.get("/habits").text
-    client.post("/categories/2", data={"name": "Career", "icon": " 🏔️ ", "with_icon": "true"})
+    client.post("/categories/2", data={"name": "Career", "icon": " 🧗 ", "with_icon": "true"})
     assert (
-        '<h3>Career<span class="cat-icon" aria-hidden="true">🏔️</span></h3>'
+        '<h3>Career<span class="cat-icon" aria-hidden="true">🧗</span></h3>'
         in client.get("/day/2026-09-27").text
     )
     client.post(

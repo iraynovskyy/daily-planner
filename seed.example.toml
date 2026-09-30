@@ -14,7 +14,7 @@ habits = [
 
 [[category]]
 name = "Career"
-icon = "🏔️"
+icon = "🚀"
 habits = [
   { name = "Learning videos", target = 2, unit = "videos" },
   { name = "Side project", target = 1, unit = "30 min" },
