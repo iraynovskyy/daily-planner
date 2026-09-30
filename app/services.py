@@ -83,7 +83,7 @@ class YearDay:
 @dataclass
 class HabitYear:
     habit: Habit
-    pct: int  # share of its tracked days that were fully done
+    pct: int  # share of its ticks done over its tracked days (2 of 3 meals counts as 2/3)
     best: int  # longest run of fully done days this year
     golden: int
 
@@ -340,6 +340,8 @@ def year_stats(
 ) -> YearStats:
     """Every day of `year` with its completion %, plus each habit's consistency and best run.
 
+    Consistency counts partly done days in part (2 of 3 meals = 2/3); a run needs full days.
+
     A day's % is counted like the month grid's "Done" row: required habits that are active, or
     that have progress in that month. Days before the user's first tick and days ahead aren't
     tracked; today counts once something is ticked. `category_id` limits it to one category.
@@ -369,7 +371,7 @@ def year_stats(
         e = by_key.get((h.id, d))
         return e is not None and e.count_done >= h.target_count
 
-    days, runs = [], {h.id: [0, 0, 0, 0] for h in habits}  # counted, done, run, best
+    days, runs = [], {h.id: [0, 0, 0, 0] for h in habits}  # ticks possible, ticks done, run, best
     golden = {h.id: 0 for h in habits}
     for n in range((last - first).days + 1):
         d = first + timedelta(days=n)
@@ -393,9 +395,10 @@ def year_stats(
             r = runs[h.id]
             if d == today and (h.id, d) not in by_key:
                 continue  # today is still open for this habit
-            r[0] += 1
-            if done(h, d):
-                r[1] += 1
+            e = by_key.get((h.id, d))
+            r[0] += h.target_count
+            r[1] += min(e.count_done, h.target_count) if e else 0
+            if done(h, d):  # a streak needs the whole day done
                 r[2] += 1
                 r[3] = max(r[3], r[2])
             else:
