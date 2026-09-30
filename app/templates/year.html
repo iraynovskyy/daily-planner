@@ -21,6 +21,25 @@
   {% endfor %}
 </nav>
 
+{# Focus: the few habits picked by hand. Set once and rarely changed, so once something is
+   picked it sits at the bottom of the page, closed. #}
+{% macro focus_picker(bottom=False) -%}
+<details class="focus-pick{% if bottom %} bottom{% endif %}"{% if not focus_habits %} open{% endif %}>
+  <summary>Choose habits · {{ focus_habits | length }} picked</summary>
+  <form method="post" action="/habits/focus">
+    <input type="hidden" name="year" value="{{ year }}">
+    <p class="year-note">Pick the habits you're working on now, one or many, to follow just them here.</p>
+    <div class="focus-options">
+      {% for h in all_habits %}
+        <label><input type="checkbox" name="ids" value="{{ h.id }}"{% if h.focus %} checked{% endif %}>
+          <span class="habit-title">{{ h.name }}</span>{% if h.optional %} <span class="optional-tag">optional</span>{% endif %}</label>
+      {% endfor %}
+    </div>
+    <button type="submit">Save</button>
+  </form>
+</details>
+{%- endmacro %}
+
 {# One square per day, linked to it; the shade is that day's % (see the legend below). #}
 {% macro yc(d) -%}
   {%- if d is none -%}<span class="yc pad"></span>
@@ -32,23 +51,8 @@
   {%- endif -%}
 {%- endmacro %}
 
-{% if focus %}
-{# Focus: the few habits picked by hand. Opens by itself while none are picked. #}
-<details class="focus-pick"{% if not focus_habits %} open{% endif %}>
-  <summary>Choose habits · {{ focus_habits | length }} picked</summary>
-  <form method="post" action="/habits/focus">
-    <input type="hidden" name="year" value="{{ year }}">
-    <p class="year-note">Pick the 3–4 habits you're working on now to follow just them here.</p>
-    <div class="focus-options">
-      {% for h in all_habits %}
-        <label><input type="checkbox" name="ids" value="{{ h.id }}"{% if h.focus %} checked{% endif %}>
-          <span class="habit-title">{{ h.name }}</span>{% if h.optional %} <span class="optional-tag">optional</span>{% endif %}</label>
-      {% endfor %}
-    </div>
-    <button type="submit">Save</button>
-  </form>
-</details>
-{% endif %}
+{# Focus with nothing picked yet: picking is the only thing to do, so it comes first. #}
+{% if focus and not focus_habits %}{{ focus_picker() }}{% endif %}
 
 {% if focus and not focus_habits %}
 <p class="year-note focus-empty">No habits in Focus yet. Pick a few above and their year shows up here.</p>
@@ -139,5 +143,6 @@
 {% else %}
 <p class="year-note">Nothing tracked in {{ year }} yet.</p>
 {% endif %}
+{% if focus and focus_habits %}{{ focus_picker(bottom=True) }}{% endif %}
 {% endif %}
 {% endblock %}

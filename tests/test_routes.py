@@ -350,7 +350,10 @@ def test_year_focus_view(client):
     r = client.post("/habits/focus", data={"year": 2026, "ids": [1, 6]}, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/year/2026?focus=1"
     picked = client.get("/year/2026?focus=1").text
-    assert "Choose habits · 2 picked" in picked and '<details class="focus-pick">' in picked
+    assert "Choose habits · 2 picked" in picked and '<details class="focus-pick bottom">' in picked
+    # Picked once, rarely changed: the panel sits under the grid, not above it.
+    assert picked.index('class="year-grid"') < picked.index('class="focus-pick bottom"')
+    assert empty.index('class="focus-pick"') < empty.index("No habits in Focus yet")
     assert 'aria-current="page" title="Only the habits you picked">Focus' in picked
     assert 'href="/year/2025?focus=1"' in picked  # year arrows stay in Focus
     # Once something is picked, the page opens on Focus; All stays one tap away.

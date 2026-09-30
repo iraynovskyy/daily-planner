@@ -520,19 +520,25 @@ body { transition: background-color .25s, color .25s; }
 :root {
   --yl0: #e3e8ef; --yl1: #c3dcf1; --yl2: #86bde6; --yl3: #3f94cf; --yl4: #0172ad;
   --y-ahead: #e6eaef;
-  --gold-quiet: #8c6a2e; /* antique gold: warm and muted, not the bright star yellow */
+  --gold-quiet: #7e5c22; /* antique gold: warm and muted, not the bright star yellow */
+  --gold-rim: linear-gradient(135deg, #b8924a, #6f511c 45%, #a8843d); /* polished dark-gold edge */
 }
 @media only screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --yl0: #242a36; --yl1: #0e3a5c; --yl2: #0f5f94; --yl3: #1689cc; --yl4: #4cc2ff; --y-ahead: #222835;
-    --gold-quiet: #c9a961;
+    --gold-quiet: #d2b16c;
+    --gold-rim: linear-gradient(135deg, #e3c47f, #9a7431 45%, #d6b36a);
   }
 }
 :root[data-theme="dark"] {
   --yl0: #242a36; --yl1: #0e3a5c; --yl2: #0f5f94; --yl3: #1689cc; --yl4: #4cc2ff; --y-ahead: #222835;
-  --gold-quiet: #c9a961;
+  --gold-quiet: #d2b16c;
+  --gold-rim: linear-gradient(135deg, #e3c47f, #9a7431 45%, #d6b36a);
 }
-.year-cats { display: flex; justify-content: flex-start; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 1rem; }
+.year-cats {
+  display: flex; justify-content: flex-start; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 1rem;
+  --chip-ground: var(--pico-background-color); /* captured here: Pico resets it inside links */
+}
 .year-cats a {
   padding: .2rem .8rem; border-radius: 999px; border: 1px solid var(--pico-muted-border-color);
   color: var(--pico-muted-color); text-decoration: none; font-size: .85rem;
@@ -541,8 +547,10 @@ body { transition: background-color .25s, color .25s; }
 .year-cats .focus-chip { display: inline-flex; align-items: center; gap: .4rem; }
 /* A light touch of gold: a small dot, and when selected a thin gold outline and warm text. */
 .year-cats .focus-chip::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--gold-quiet); }
+/* Selected: a 1.5px dark-gold rim, drawn as a gradient so it reads like polished metal. */
 .year-cats .focus-chip[aria-current="page"] {
-  color: var(--gold-quiet); border-color: color-mix(in srgb, var(--gold-quiet) 60%, transparent);
+  color: var(--gold-quiet); font-weight: 600; border: 1.5px solid transparent;
+  background: linear-gradient(var(--chip-ground), var(--chip-ground)) padding-box, var(--gold-rim) border-box;
 }
 .year-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin: 0 auto 1.25rem; max-width: 34rem; }
 .year-tile {
@@ -588,6 +596,7 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
 .year-note { font-size: .78rem; color: var(--pico-muted-color); }
 
 /* Focus: picking the habits to follow */
+.focus-pick.bottom { margin: 2rem 0 0; }
 .focus-pick { margin: 0 0 1.25rem; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); padding: .5rem .9rem; }
 .focus-pick > summary { font-size: .9rem; font-weight: 600; cursor: pointer; }
 .focus-pick form { margin: .6rem 0 .2rem; }
