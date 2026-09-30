@@ -87,6 +87,11 @@ class HabitYear:
     best: int  # longest run of fully done days this year
     golden: int
 
+    @property
+    def level(self) -> int:
+        """Same shades as the year's squares, so the list reads like the grid."""
+        return YearDay(self.habit.created_at.date(), self.pct).level
+
 
 @dataclass
 class YearStats:
@@ -336,7 +341,12 @@ def streaks(
 
 
 def year_stats(
-    session: Session, user_id: int, year: int, today: date, category_id: int | None = None
+    session: Session,
+    user_id: int,
+    year: int,
+    today: date,
+    category_id: int | None = None,
+    focus: bool = False,
 ) -> YearStats:
     """Every day of `year` with its completion %, plus each habit's consistency and best run.
 
@@ -344,13 +354,14 @@ def year_stats(
 
     A day's % is counted like the month grid's "Done" row: required habits that are active, or
     that have progress in that month. Days before the user's first tick and days ahead aren't
-    tracked; today counts once something is ticked. `category_id` limits it to one category.
+    tracked; today counts once something is ticked. `category_id` limits it to one category,
+    `focus` to the habits picked for Focus (optional ones count there: they were picked on purpose).
     """
     first, last = date(year, 1, 1), date(year, 12, 31)
     habits = [
         h
         for h in list_habits(session, user_id)
-        if category_id is None or h.category_id == category_id
+        if (category_id is None or h.category_id == category_id) and (not focus or h.focus)
     ]
     entries = [e for e in _entries(session, user_id, first, last) if e.count_done > 0]
     ids = {h.id for h in habits}
@@ -379,7 +390,7 @@ def year_stats(
             days.append(YearDay(d))
             continue
         counted = [h for h in habits if h.active or (h.id, d.month) in with_history]
-        required = [h for h in counted if not h.optional]
+        required = [h for h in counted if focus or not h.optional]
         target = sum(h.target_count for h in required)
         ticks = sum(
             min(by_key[h.id, d].count_done, h.target_count) for h in required if (h.id, d) in by_key
@@ -503,6 +514,20 @@ def delete_habit(session: Session, user_id: int, habit_id: int) -> Habit | None:
     session.delete(habit)
     session.commit()
     return habit
+
+
+def set_focus(session: Session, user_id: int, habit_ids: list[int]) -> bool:
+    """Makes exactly these habits the Focus set (empty clears it).
+
+    False if an id isn't one of the user's habits.
+    """
+    habits = list_habits(session, user_id)
+    if not set(habit_ids) <= {h.id for h in habits}:
+        return False
+    for h in habits:
+        h.focus = h.id in habit_ids
+    session.commit()
+    return True
 
 
 def reorder_habits(session: Session, user_id: int, habit_ids: list[int]) -> bool:

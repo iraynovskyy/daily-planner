@@ -329,3 +329,17 @@ def test_short_addresses_and_manifest(client, anon_client):
     for icon in m["icons"]:
         assert anon_client.get(icon["src"]).status_code == 200
     assert '<link rel="manifest" href="/manifest.webmanifest">' in anon_client.get("/login").text
+
+
+def test_year_focus_view(client):
+    page = client.get("/year/2026").text
+    assert page.index(">All<") < page.index(">Focus<") < page.index(">Base<")  # All · Focus · Base…
+    empty = client.get("/year/2026?focus=1").text
+    assert '<details class="focus-pick" open>' in empty and "No habits in Focus yet" in empty
+    r = client.post("/habits/focus", data={"year": 2026, "ids": [1, 6]}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/year/2026?focus=1"
+    picked = client.get("/year/2026?focus=1").text
+    assert "Choose habits · 2 picked" in picked and '<details class="focus-pick">' in picked
+    assert 'aria-current="page" title="Only the habits you picked">Focus' in picked
+    assert 'href="/year/2025?focus=1"' in picked  # year arrows stay in Focus
+    assert client.post("/habits/focus", data={"year": 2026, "ids": [999]}).status_code == 400

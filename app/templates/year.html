@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ year }} · Daily Planner{% endblock %}
 {% block content %}
-{% set qs = "?category=" ~ category if category else "" %}
+{% set qs = "?focus=1" if focus else ("?category=" ~ category if category else "") %}
+{% set focus_habits = all_habits | selectattr("focus") | list %}
 <nav class="day-nav">
   <a href="/year/{{ year - 1 }}{{ qs }}" role="button" class="outline">←</a>
   <hgroup>
@@ -12,7 +13,8 @@
 </nav>
 
 <nav class="year-cats" aria-label="Category">
-  <a href="/year/{{ year }}"{% if not category %} aria-current="page"{% endif %}>All</a>
+  <a href="/year/{{ year }}"{% if not category and not focus %} aria-current="page"{% endif %}>All</a>
+  <a href="/year/{{ year }}?focus=1"{% if focus %} aria-current="page"{% endif %} title="Only the habits you picked">Focus</a>
   {% for c in categories %}
     <a href="/year/{{ year }}?category={{ c.id }}"{% if category == c.id %} aria-current="page"{% endif %}>{{ c.name }}</a>
   {% endfor %}
@@ -29,6 +31,27 @@
   {%- endif -%}
 {%- endmacro %}
 
+{% if focus %}
+{# Focus: the few habits picked by hand. Opens by itself while none are picked. #}
+<details class="focus-pick"{% if not focus_habits %} open{% endif %}>
+  <summary>Choose habits · {{ focus_habits | length }} picked</summary>
+  <form method="post" action="/habits/focus">
+    <input type="hidden" name="year" value="{{ year }}">
+    <p class="year-note">Pick the 3–4 habits you're working on now to follow just them here.</p>
+    <div class="focus-options">
+      {% for h in all_habits %}
+        <label><input type="checkbox" name="ids" value="{{ h.id }}"{% if h.focus %} checked{% endif %}>
+          <span class="habit-title">{{ h.name }}</span>{% if h.optional %} <span class="optional-tag">optional</span>{% endif %}</label>
+      {% endfor %}
+    </div>
+    <button type="submit">Save</button>
+  </form>
+</details>
+{% endif %}
+
+{% if focus and not focus_habits %}
+<p class="year-note focus-empty">No habits in Focus yet. Pick a few above and their year shows up here.</p>
+{% else %}
 {% if stats.tracked %}
 <div class="year-tiles">
   <div class="year-tile">
@@ -80,20 +103,49 @@
 </section>
 
 {% if stats.habits %}
+{# Ranked by consistency; the bar uses the same shades as the squares above. Beyond 4 habits,
+   the top 3 show and the rest open with "Show all" (remembered per browser). #}
+{% set collapsible = stats.habits | length > 4 %}
 <section class="year-habits-box">
   <h3>Most consistent habits</h3>
-  <ul class="year-habits">
+  <ol class="year-habits{% if collapsible %} collapsible{% endif %}" id="year-habits">
     {% for h in stats.habits %}
-    <li>
-      <span class="habit-title">{{ h.habit.name }}{% if h.habit.optional %} <span class="optional-tag">optional</span>{% endif %}</span>
+    <li{% if loop.index > 3 %} class="more"{% endif %}>
+      <span class="rank">{{ loop.index }}</span>
+      <span class="habit-title">{{ h.habit.name }}{% if h.habit.optional %} <span class="optional-tag">optional</span>{% endif %}
+        {%- if not category %} <span class="cat">{{ category_names[h.habit.category_id] }}</span>{% endif %}</span>
       <b>{{ h.pct }}%</b>
-      <span class="bar"><i style="width: {{ h.pct }}%"></i></span>
+      <span class="bar"><i data-l="{{ h.level }}" style="width: {{ h.pct }}%"></i></span>
       <small>🔥 best {{ h.best }} day{{ "s" if h.best != 1 }}{% if h.golden %} <span class="g">⭐ {{ h.golden }} golden</span>{% endif %}</small>
     </li>
     {% endfor %}
-  </ul>
+  </ol>
+  {% if collapsible %}
+  <button type="button" class="year-habits-more outline secondary" aria-controls="year-habits" aria-expanded="false"
+          data-all="Show all {{ stats.habits | length }} habits" data-top="Show top 3">Show all {{ stats.habits | length }} habits</button>
+  <script>
+    (() => {
+      const list = document.getElementById("year-habits");
+      const btn = document.querySelector(".year-habits-more");
+      const apply = (open) => {
+        list.classList.toggle("expanded", open);
+        btn.setAttribute("aria-expanded", String(open));
+        btn.textContent = open ? btn.dataset.top : btn.dataset.all;
+      };
+      let open = false;
+      try { open = localStorage.getItem("planner:year-habits") === "all"; } catch {}
+      apply(open);
+      btn.addEventListener("click", () => {
+        open = !open;
+        apply(open);
+        try { localStorage.setItem("planner:year-habits", open ? "all" : "top"); } catch {}
+      });
+    })();
+  </script>
+  {% endif %}
 </section>
 {% else %}
 <p class="year-note">Nothing tracked in {{ year }} yet.</p>
+{% endif %}
 {% endif %}
 {% endblock %}

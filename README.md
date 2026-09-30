@@ -32,7 +32,7 @@ own). Add it to the home screen and it opens full screen on today's checklist, l
 - **Month grid**: every day at a glance; click any cell to tick it
 - **Golden days**: double-tap a habit's box when you did it especially well, and it turns into a gold star
 - **Streaks**: a 🔥 badge once a habit is done 5+ days in a row
-- **Year at a glance**: a square per day shaded by completion, best streaks, golden and perfect days, and the most consistent habits, per category
+- **Year at a glance**: a square per day shaded by completion, best streaks, golden and perfect days, and the most consistent habits, per category or for a hand-picked **Focus** set of 3–4 habits
 - **Timelines** with progress rings per category: smooth 7-day-average trend lines with each day as a faint dot (or a Daily view with the exact values), a line per habit to show or hide (or all at once); today counts once you tick something, so an unfinished day never shows as a drop to 0%
 - **Drag-and-drop** (or keyboard) reordering and per-row highlight colours
 - **Notes** in collapsible blocks (tips, ideas, comfort), editable in place and movable between blocks

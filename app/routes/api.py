@@ -88,6 +88,19 @@ def create_habit(
     return RedirectResponse("/habits", status_code=303)
 
 
+@router.post("/habits/focus")
+def set_focus(
+    session: SessionDep,
+    user: UserDep,
+    year: Annotated[int, Form(ge=2000, le=2100)],
+    ids: Annotated[list[int] | None, Form()] = None,
+):
+    """The year page's "Choose habits" form: the checked habits become the Focus set."""
+    if not services.set_focus(session, user, ids or []):
+        raise HTTPException(400, "Unknown habit")
+    return RedirectResponse(f"/year/{year}?focus=1", status_code=303)
+
+
 @router.post("/habits/reorder", status_code=204)
 def reorder_habits(ids: Annotated[list[int], Form()], session: SessionDep, user: UserDep) -> None:
     """Drag-and-drop endpoint: `ids` = the habits of one category in their new order."""
