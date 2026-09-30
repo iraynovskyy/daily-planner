@@ -533,12 +533,20 @@ body { transition: background-color .25s, color .25s; }
 }
 a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline-offset: 1px; }
 
+/* The week strip is centred, with squares up to 15px that shrink to fit narrower screens. */
+.year-grid { container-type: inline-size; }
 .year-scroll { overflow-x: auto; padding: 2px; }
-.year-strip { display: grid; grid-template-columns: auto auto; gap: 4px 6px; width: max-content; }
-.ys-months { grid-column: 2; display: grid; grid-template-columns: repeat(var(--weeks), 13px); font-size: .7rem; color: var(--pico-muted-color); height: 1rem; }
+.year-strip {
+  --yc: clamp(10px, calc((100cqi - 44px) / 53 - 2px), 15px);
+  display: grid; grid-template-columns: auto auto; gap: 4px 6px; width: max-content; margin-inline: auto;
+}
+.ys-months { grid-column: 2; display: grid; grid-template-columns: repeat(var(--weeks), calc(var(--yc) + 2px)); font-size: .72rem; color: var(--pico-muted-color); height: 1rem; }
 .ys-months span { white-space: nowrap; }
-.ys-wd { display: grid; grid-template-rows: repeat(7, 11px); gap: 2px; font-size: .62rem; line-height: 11px; color: var(--pico-muted-color); }
-.ys-weeks { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 11px); grid-auto-columns: 11px; gap: 2px; }
+.ys-wd { display: grid; grid-template-rows: repeat(7, var(--yc)); gap: 2px; font-size: .64rem; line-height: var(--yc); color: var(--pico-muted-color); }
+.ys-weeks { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, var(--yc)); grid-auto-columns: var(--yc); gap: 2px; }
+.ys-weeks .yc { width: var(--yc); height: var(--yc); border-radius: 3px; }
+.year-grid .year-legend { justify-content: center; }
+.year-grid .year-note { text-align: center; }
 .year-months { display: none; }
 .year-legend { list-style: none; display: flex; flex-wrap: wrap; gap: .3rem 1rem; padding: 0; margin: .9rem 0 .3rem; font-size: .75rem; color: var(--pico-muted-color); }
 .year-legend li { list-style: none; display: flex; align-items: center; gap: .35rem; margin: 0; }
@@ -606,6 +614,8 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
   .ym-name { font-size: .72rem; font-weight: 600; color: var(--pico-muted-color); }
   .ym-days { display: grid; grid-template-columns: repeat(7, 13px); gap: 2px; }
   .ym .yc { width: 13px; height: 13px; border-radius: 3px; }
+  .year-grid .year-legend { justify-content: flex-start; }
+  .year-grid .year-note { text-align: left; }
 
   /* Month grid: each habit is its name on one line and its checks on the next, so the days get
      the whole width (~9 visible instead of 3). Every row is a grid of --days equal columns; the
