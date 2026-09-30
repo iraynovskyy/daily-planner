@@ -181,8 +181,8 @@ def test_multi_check_cells_are_one_row(client):
 
 def test_category_icon_only_on_timeline_title(client):
     page = client.get("/month/2026-09").text
-    assert "<summary>🧱 Base timeline</summary>" in page
-    assert '<h3>Base<span class="cat-icon" aria-hidden="true">🧱</span></h3>' in page
+    assert "<summary>🗿 Base timeline</summary>" in page
+    assert '<h3>Base<span class="cat-icon" aria-hidden="true">🗿</span></h3>' in page
 
 
 def test_health(client):
@@ -361,3 +361,21 @@ def test_year_focus_view(client):
     all_view = client.get("/year/2026?view=all").text
     assert 'aria-current="page">All' in all_view and 'href="/year/2025?view=all"' in all_view
     assert client.post("/habits/focus", data={"year": 2026, "ids": [999]}).status_code == 400
+
+
+def test_category_icon_can_be_changed(client):
+    assert 'name="icon" value="🗿"' in client.get("/habits").text
+    client.post("/categories/2", data={"name": "Career", "icon": " 🏔️ ", "with_icon": "true"})
+    assert (
+        '<h3>Career<span class="cat-icon" aria-hidden="true">🏔️</span></h3>'
+        in client.get("/day/2026-09-27").text
+    )
+    client.post(
+        "/categories/2", data={"name": "Career", "icon": "", "with_icon": "true"}
+    )  # cleared
+    assert "<h3>Career</h3>" in client.get("/day/2026-09-27").text
+    client.post("/categories/1", data={"name": "Basics"})  # no icon field: icon kept
+    assert (
+        '<h3>Basics<span class="cat-icon" aria-hidden="true">🗿</span></h3>'
+        in client.get("/day/2026-09-27").text
+    )

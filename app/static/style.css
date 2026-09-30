@@ -43,6 +43,7 @@ body > main.container { padding-block: 0 2rem; }
 .category-head .progress-bar { flex: 1; margin: 0; }
 .category-rename { max-width: 28rem; }
 .category-rename input { font-weight: 700; }
+.category-rename .cat-icon-input { flex: 0 0 3.6rem; max-width: 3.6rem; text-align: center; font-weight: 400; }
 .category-tools { display: flex; flex-wrap: wrap; gap: 0 1rem; }
 .category-tools .category-rename { flex: 1 1 18rem; }
 .category-delete { width: auto; max-width: 22rem; }

@@ -169,8 +169,13 @@ def rename_category(
     name: Annotated[str, Form(min_length=1, max_length=50)],
     session: SessionDep,
     user: UserDep,
+    icon: Annotated[str | None, Form(max_length=10)] = None,
+    with_icon: Annotated[bool, Form()] = False,
 ):
-    if services.rename_category(session, user, category_id, name) is None:
+    # An empty form field arrives as None; with_icon tells "cleared" apart from "not sent".
+    if with_icon:
+        icon = icon or ""
+    if services.rename_category(session, user, category_id, name, icon) is None:
         raise HTTPException(404, "Category not found")
     return RedirectResponse("/habits", status_code=303)
 

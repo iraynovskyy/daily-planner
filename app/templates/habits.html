@@ -22,8 +22,10 @@
   </div>
   <div class="editor category-tools" id="cat-{{ category.id }}" hidden>
     <form method="post" action="/categories/{{ category.id }}" role="group" class="category-rename">
+      <input type="hidden" name="with_icon" value="true">
+      <input name="icon" value="{{ category.icon or '' }}" maxlength="10" placeholder="🙂" aria-label="Icon (an emoji)" title="Icon: any emoji, or empty for none" class="cat-icon-input">
       <input name="name" value="{{ category.name }}" required maxlength="50" aria-label="Category name">
-      <button type="submit" class="secondary outline">Rename</button>
+      <button type="submit" class="secondary outline">Save</button>
     </form>
     {% if categories | length > 1 %}
     {# Habits are never deleted with their category: they move, history included. #}
