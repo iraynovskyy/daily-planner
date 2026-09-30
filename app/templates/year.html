@@ -100,7 +100,7 @@
 </section>
 
 {% if stats.habits %}
-{# Ranked by consistency; the bar uses the same shades as the squares above. Beyond 4 habits,
+{# Sorted by consistency, quietly (no rank numbers); the bar uses the grid's shades. Beyond 4 habits,
    the top 3 show and the rest open with "Show all" (remembered per browser). #}
 {% set collapsible = stats.habits | length > 4 %}
 <section class="year-habits-box">
@@ -108,7 +108,6 @@
   <ol class="year-habits{% if collapsible %} collapsible{% endif %}" id="year-habits">
     {% for h in stats.habits %}
     <li{% if loop.index > 3 %} class="more"{% endif %}>
-      <span class="rank">{{ loop.index }}</span>
       <span class="habit-title">{{ h.habit.name }}{% if h.habit.optional %} <span class="optional-tag">optional</span>{% endif %}
         {%- if not category %} <span class="cat">{{ category_names[h.habit.category_id] }}</span>{% endif %}</span>
       <b>{{ h.pct }}%</b>
