@@ -58,11 +58,58 @@ function runs(points) {
   return out;
 }
 
+// Chart style, shared by every timeline and remembered per browser: "trend" (7-day average,
+// smooth) or "daily" (each day's exact value, straight lines).
+const chartMode = {
+  get() {
+    try {
+      return localStorage.getItem("planner:chart-mode") === "daily" ? "daily" : "trend";
+    } catch {
+      return this.value ?? "trend";
+    }
+  },
+  set(mode) {
+    this.value = mode;
+    try {
+      localStorage.setItem("planner:chart-mode", mode);
+    } catch {}
+    document.dispatchEvent(new CustomEvent("chart-mode", { detail: mode }));
+  },
+};
+
 document.querySelectorAll(".category .timeline").forEach((section) => {
   const root = section.closest(".category");
   const svg = section.querySelector(".timeline-svg");
   const tip = section.querySelector(".timeline-tip");
   const legend = section.querySelector(".timeline-legend");
+  const lineValue = (p) => (chartMode.get() === "daily" ? p.value : p.avg);
+  // Trend | Daily switch at the end of the legend row; changing it redraws every timeline.
+  const modes = document.createElement("div");
+  modes.className = "chart-mode";
+  modes.setAttribute("role", "radiogroup");
+  modes.setAttribute("aria-label", "Chart style");
+  const modeButtons = [
+    ["trend", "Trend", "7-day average: the direction you're heading"],
+    ["daily", "Daily", "Each day's exact value"],
+  ].map(([mode, label, title]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    b.dataset.mode = mode;
+    b.textContent = label;
+    b.title = title;
+    b.addEventListener("click", () => chartMode.set(mode));
+    return b;
+  });
+  const syncModes = () =>
+    modeButtons.forEach((b) => b.setAttribute("aria-checked", String(b.dataset.mode === chartMode.get())));
+  modes.append(...modeButtons);
+  section.querySelector(".timeline-head").append(modes);
+  syncModes();
+  document.addEventListener("chart-mode", () => {
+    syncModes();
+    render();
+  });
   const today = section.dataset.today;
   const NS = "http://www.w3.org/2000/svg";
   const MAX_SLOTS = 8; // categorical palette size; colours are never cycled
@@ -202,14 +249,17 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
     }
 
     // Draw in reverse so habit 1 sits on top; the overall line stays underneath.
-    const dotted = visible.length <= 2; // daily dots only while they don't turn into confetti
+    const daily = chartMode.get() === "daily";
+    const shape = daily ? (r) => r.map(([px, py], k) => (k ? "L" : "M") + px + "," + py).join("") : monotonePath;
+    // Trend lines get each day as a faint dot, while that doesn't turn into confetti.
+    const dotted = !daily && visible.length <= 2;
     for (const s of [...visible].reverse()) {
-      const parts = runs(s.points.map((p, i) => (p.avg === null ? null : [x(i), y(p.avg)])));
+      const parts = runs(s.points.map((p, i) => (lineValue(p) === null ? null : [x(i), y(lineValue(p))])));
       if (!parts.length) continue;
-      const d = parts.map(monotonePath).join("");
+      const d = parts.map(shape).join("");
       if (s.key === "overall") {
         for (const r of parts) {
-          el("path", { class: "area", d: `${monotonePath(r)}L${r.at(-1)[0]},${y(0)}L${r[0][0]},${y(0)}Z` });
+          el("path", { class: "area", d: `${shape(r)}L${r.at(-1)[0]},${y(0)}L${r[0][0]},${y(0)}Z` });
         }
       }
       if (dotted) {
@@ -225,9 +275,9 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       // Spread end labels so converging lines (e.g. several at 0%) don't collide; a leader ties each to its line.
       // Each line is labelled at its last plotted day (today may not be plotted yet).
       const labels = visible
-        .map((s) => ({ s, i: s.points.findLastIndex((p) => p.avg !== null) }))
+        .map((s) => ({ s, i: s.points.findLastIndex((p) => lineValue(p) !== null) }))
         .filter((l) => l.i >= 0)
-        .map((l) => ({ ...l, v: Math.round(l.s.points[l.i].avg) }))
+        .map((l) => ({ ...l, v: Math.round(lineValue(l.s.points[l.i])) }))
         .map((l) => ({ ...l, ly: y(l.v), ty: y(l.v) }))
         .sort((a, b) => a.ly - b.ly);
       for (let k = 1; k < labels.length; k++) labels[k].ty = Math.max(labels[k].ty, labels[k - 1].ty + 14);
@@ -257,7 +307,7 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
     hover.cross.setAttribute("x2", x(i));
     hover.cross.setAttribute("visibility", "visible");
     for (const { s, node } of hover.dots) {
-      const v = s.points[i].avg;
+      const v = lineValue(s.points[i]);
       node.setAttribute("visibility", v === null ? "hidden" : "visible");
       if (v !== null) {
         node.setAttribute("cx", x(i));
@@ -267,8 +317,10 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
 
     const date = document.createElement("div");
     date.className = "tip-date";
+    const daily = chartMode.get() === "daily";
     date.textContent =
-      days[i].date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) + " · 7-day average";
+      days[i].date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) +
+      (daily ? "" : " · 7-day average");
     tip.replaceChildren(date);
     for (const s of hover.visible) {
       const p = s.points[i];
@@ -278,11 +330,15 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       key.className = "key";
       key.style.background = s.color;
       const value = document.createElement("b");
-      value.textContent = p.avg === null ? "—" : Math.round(p.avg) + "%";
+      const v = lineValue(p);
+      value.textContent = v === null ? "—" : Math.round(v) + "%";
       const name = document.createElement("span");
       name.textContent = s.name;
       const count = document.createElement("span");
-      count.textContent = p.value === null ? "—" : `that day ${p.value}% · ${p.done}/${p.target}`;
+      // The bold number is what the line shows; the other view's number rides along.
+      count.textContent = daily
+        ? `${p.done}/${p.target}` + (p.avg === null ? "" : ` · week ${Math.round(p.avg)}%`)
+        : p.value === null ? "—" : `that day ${p.value}% · ${p.done}/${p.target}`;
       row.append(key, value, name, count);
       tip.appendChild(row);
     }
