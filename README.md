@@ -13,7 +13,10 @@ HTMX — no frontend build step.
 **The whole year** on one page: every day is a square shaded by how much of it you did, a gold
 dot marks a golden day, and the records sit on top (best streak, golden and perfect days).
 
-![Year at a glance, light theme](docs/screenshots/year-light.png)
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/year-light.png">
+  <img src="docs/screenshots/year-dark.png" alt="Year at a glance: records and a square per day, shaded by completion">
+</picture>
 
 **On a phone** the header links become a bottom tab bar, each habit's name sits above its checks
 so about nine days fit on screen, and charts start with the overall line (tap a habit to add its
