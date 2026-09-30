@@ -635,7 +635,7 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
 
   .tabbar {
     position: fixed; inset: auto 0 0 0; z-index: 10;
-    display: grid; grid-template-columns: repeat(4, 1fr);
+    display: grid; grid-template-columns: repeat(5, 1fr);
     padding-bottom: env(safe-area-inset-bottom);
     background: color-mix(in srgb, var(--pico-background-color) 88%, transparent);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -653,6 +653,7 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
   }
   .tabbar a[aria-current="page"] { color: var(--pico-primary); }
   .tabbar a[aria-current="page"] svg { stroke-width: 2.2; }
+  .tabbar svg .fill { fill: currentColor; stroke: none; }
   .tabbar a:active { transform: scale(.94); }
   /* Keep the last rows and notes clear of the bar. */
   body:has(.tabbar) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }

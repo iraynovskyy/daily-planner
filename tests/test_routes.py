@@ -258,6 +258,7 @@ def test_static_files_are_versioned(client):
     [
         ("/month/2026-09", "Month"),
         ("/day/2026-09-27", "Today"),
+        ("/year/2026", "Year"),
         ("/habits", "Habits"),
         ("/account", "Account"),
     ],
@@ -265,7 +266,14 @@ def test_static_files_are_versioned(client):
 def test_phone_tab_bar(client, url, active):
     page = client.get(url).text
     tabbar = page.split('<nav class="tabbar" aria-label="Main">')[1].split("</nav>")[0]
-    assert tabbar.count("<a href=") == 4
+    assert tabbar.count("<a href=") == 5
+    assert [t for t in re.findall(r"<span>(\w+)</span>", tabbar)] == [
+        "Today",
+        "Month",
+        "Year",
+        "Habits",
+        "Account",
+    ]
     assert re.search(rf'aria-current="page">.*?<span>{active}</span>', tabbar, re.S)
     assert tabbar.count('aria-current="page"') == 1
 
@@ -307,9 +315,9 @@ def test_year_page(client):
     assert client.get("/year/2026?category=99").status_code == 404
     assert "Nothing tracked in 2019 yet" in client.get("/year/2019").text
     assert client.get("/year/1999").status_code == 422
-    # Reached from the month page, and the tab bar keeps Month active.
+    # Reached from the month page (and the Year tab, which is active here).
     assert '<a href="/year/2026">← 2026</a>' in client.get("/month/2026-09").text
-    assert re.search(r'aria-current="page">.*?<span>Month</span>', page, re.S)
+    assert re.search(r'aria-current="page">.*?<span>Year</span>', page, re.S)
 
 
 def test_short_addresses_and_manifest(client, anon_client):
