@@ -582,14 +582,25 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
 .focus-empty { text-align: center; padding: 1.5rem 0; }
 .year-habits-box { margin-top: 1.5rem; }
 .year-habits-box h3 { font-size: 1rem; }
-.year-habits { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: .9rem 2rem; }
-.year-habits li { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem .6rem; align-items: center; margin: 0; }
-.year-habits .habit-title { font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.year-habits b { font-variant-numeric: tabular-nums; font-size: .9rem; }
-.year-habits .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--yl0); overflow: hidden; }
-.year-habits .bar i { display: block; height: 100%; border-radius: 3px; background: var(--pico-primary); }
-.year-habits small { grid-column: 1 / -1; color: var(--pico-muted-color); font-size: .75rem; }
+.year-habits { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 2rem; }
+.year-habits li {
+  list-style: none; display: grid; grid-template-columns: 1.4rem minmax(0, 1fr) auto; gap: .2rem .5rem;
+  align-items: baseline; margin: 0;
+}
+.year-habits .rank { color: var(--pico-muted-color); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.year-habits .habit-title { font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.year-habits .cat { color: var(--pico-muted-color); font-size: .72rem; font-weight: 400; margin-left: .35rem; }
+.year-habits b { font-variant-numeric: tabular-nums; font-size: .95rem; }
+.year-habits .bar { grid-column: 2 / -1; height: 6px; border-radius: 3px; background: var(--yl0); overflow: hidden; }
+.year-habits .bar i { display: block; height: 100%; border-radius: 3px; background: var(--yl3); }
+.year-habits .bar i[data-l="1"] { background: var(--yl1); }
+.year-habits .bar i[data-l="2"] { background: var(--yl2); }
+.year-habits .bar i[data-l="4"] { background: var(--yl4); }
+.year-habits small { grid-column: 2 / -1; color: var(--pico-muted-color); font-size: .75rem; }
 .year-habits .g { color: var(--gold-text); margin-left: .6rem; }
+/* Top 3 until "Show all"; without JavaScript every habit shows. */
+.year-habits.collapsible:not(.expanded) li.more { display: none; }
+.year-habits-more { width: auto; margin: .9rem 0 0; padding: .3rem 1rem; font-size: .85rem; }
 
 /* --- Phones: tab bar at the bottom instead of the header links -------------------------------- */
 /* Everything below only applies under 700px; wider screens look exactly as before. */

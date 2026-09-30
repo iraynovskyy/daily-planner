@@ -103,18 +103,46 @@
 </section>
 
 {% if stats.habits %}
+{# Ranked by consistency; the bar uses the same shades as the squares above. Beyond 4 habits,
+   the top 3 show and the rest open with "Show all" (remembered per browser). #}
+{% set collapsible = stats.habits | length > 4 %}
 <section class="year-habits-box">
   <h3>Most consistent habits</h3>
-  <ul class="year-habits">
+  <ol class="year-habits{% if collapsible %} collapsible{% endif %}" id="year-habits">
     {% for h in stats.habits %}
-    <li>
-      <span class="habit-title">{{ h.habit.name }}{% if h.habit.optional %} <span class="optional-tag">optional</span>{% endif %}</span>
+    <li{% if loop.index > 3 %} class="more"{% endif %}>
+      <span class="rank">{{ loop.index }}</span>
+      <span class="habit-title">{{ h.habit.name }}{% if h.habit.optional %} <span class="optional-tag">optional</span>{% endif %}
+        {%- if not category %} <span class="cat">{{ category_names[h.habit.category_id] }}</span>{% endif %}</span>
       <b>{{ h.pct }}%</b>
-      <span class="bar"><i style="width: {{ h.pct }}%"></i></span>
+      <span class="bar"><i data-l="{{ h.level }}" style="width: {{ h.pct }}%"></i></span>
       <small>🔥 best {{ h.best }} day{{ "s" if h.best != 1 }}{% if h.golden %} <span class="g">⭐ {{ h.golden }} golden</span>{% endif %}</small>
     </li>
     {% endfor %}
-  </ul>
+  </ol>
+  {% if collapsible %}
+  <button type="button" class="year-habits-more outline secondary" aria-controls="year-habits" aria-expanded="false"
+          data-all="Show all {{ stats.habits | length }} habits" data-top="Show top 3">Show all {{ stats.habits | length }} habits</button>
+  <script>
+    (() => {
+      const list = document.getElementById("year-habits");
+      const btn = document.querySelector(".year-habits-more");
+      const apply = (open) => {
+        list.classList.toggle("expanded", open);
+        btn.setAttribute("aria-expanded", String(open));
+        btn.textContent = open ? btn.dataset.top : btn.dataset.all;
+      };
+      let open = false;
+      try { open = localStorage.getItem("planner:year-habits") === "all"; } catch {}
+      apply(open);
+      btn.addEventListener("click", () => {
+        open = !open;
+        apply(open);
+        try { localStorage.setItem("planner:year-habits", open ? "all" : "top"); } catch {}
+      });
+    })();
+  </script>
+  {% endif %}
 </section>
 {% else %}
 <p class="year-note">Nothing tracked in {{ year }} yet.</p>

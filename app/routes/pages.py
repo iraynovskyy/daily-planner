@@ -138,6 +138,7 @@ def year_page(
             "month_labels": month_labels,
             "months": months,
             "categories": categories,
+            "category_names": {c.id: c.name for c in categories},
             "category": category,
             "focus": focus,
             "all_habits": services.list_habits(session, user, active_only=True),

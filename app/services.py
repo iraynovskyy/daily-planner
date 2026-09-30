@@ -87,6 +87,11 @@ class HabitYear:
     best: int  # longest run of fully done days this year
     golden: int
 
+    @property
+    def level(self) -> int:
+        """Same shades as the year's squares, so the list reads like the grid."""
+        return YearDay(self.habit.created_at.date(), self.pct).level
+
 
 @dataclass
 class YearStats:
