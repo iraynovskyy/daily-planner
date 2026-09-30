@@ -38,9 +38,9 @@
           </button>
         </li>
         {% if request.session.get("user_id") %}
-        <li><a href="/day/{{ today_iso() }}">Today</a></li>
-        <li><a href="/">Month</a></li>
         <li><a href="/year">Year</a></li>
+        <li><a href="/">Month</a></li>
+        <li><a href="/day/{{ today_iso() }}">Today</a></li>
         <li><a href="/habits">Habits</a></li>
         <li><a href="/account">Account</a></li>
         <li>
@@ -62,10 +62,10 @@
     <a href="{{ href }}"{% if active %} aria-current="page"{% endif %}>{{ caller() }}<span>{{ label }}</span></a>
   {%- endmacro %}
   <nav class="tabbar" aria-label="Main">
-    {# Day → month → year, then the settings-like pages. #}
-    {% call tab("/day/" ~ today_iso(), "Today", path.startswith("/day/")) %}<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12.5l3 3 5-6"/></svg>{% endcall %}
-    {% call tab("/", "Month", path.startswith("/month/")) %}<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/></svg>{% endcall %}
+    {# Year → month → day, then the settings-like pages. #}
     {% call tab("/year", "Year", path.startswith("/year")) %}<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><g class="fill"><circle cx="8.5" cy="8.5" r="1.25"/><circle cx="12" cy="8.5" r="1.25"/><circle cx="15.5" cy="8.5" r="1.25"/><circle cx="8.5" cy="12" r="1.25"/><circle cx="12" cy="12" r="1.25"/><circle cx="15.5" cy="12" r="1.25"/><circle cx="8.5" cy="15.5" r="1.25"/><circle cx="12" cy="15.5" r="1.25"/></g></svg>{% endcall %}
+    {% call tab("/", "Month", path.startswith("/month/")) %}<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/></svg>{% endcall %}
+    {% call tab("/day/" ~ today_iso(), "Today", path.startswith("/day/")) %}<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12.5l3 3 5-6"/></svg>{% endcall %}
     {% call tab("/habits", "Habits", path == "/habits") %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>{% endcall %}
     {% call tab("/account", "Account", path == "/account") %}<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></svg>{% endcall %}
   </nav>

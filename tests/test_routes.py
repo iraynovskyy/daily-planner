@@ -268,9 +268,9 @@ def test_phone_tab_bar(client, url, active):
     tabbar = page.split('<nav class="tabbar" aria-label="Main">')[1].split("</nav>")[0]
     assert tabbar.count("<a href=") == 5
     assert [t for t in re.findall(r"<span>(\w+)</span>", tabbar)] == [
-        "Today",
-        "Month",
         "Year",
+        "Month",
+        "Today",
         "Habits",
         "Account",
     ]
