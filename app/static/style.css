@@ -258,7 +258,15 @@ details.notes > summary:not([role]):focus { color: var(--pico-color); }
 .timeline.with-rings { display: grid; grid-template-columns: minmax(0, 1fr) 14rem; column-gap: 1.5rem; }
 .timeline.with-rings .timeline-head { grid-column: 1 / -1; }
 .timeline-rings { margin-top: 1rem; }
-@media (max-width: 768px) { .timeline.with-rings { grid-template-columns: minmax(0, 1fr); } }
+/* Narrower screens: the rings go under the chart, the habits' rings in a 3-column grid. */
+@media (max-width: 768px) {
+  .timeline.with-rings { grid-template-columns: minmax(0, 1fr); }
+  .ring-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .9rem .5rem; }
+  .ring-list li { flex-direction: column; gap: .3rem; text-align: center; min-width: 0; }
+  .ring-list .ring-label { flex-direction: column; gap: 0; max-width: 100%; }
+  .ring-list .ring-label .key { display: none; }
+  .ring-list .ring-label span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
 .rings-caption { font-size: .8rem; color: var(--pico-muted-color); margin-bottom: .5rem; }
 .rings-empty { font-size: .85rem; color: var(--pico-muted-color); }
 .ring-main { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
@@ -692,10 +700,4 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
   .timeline-legend::-webkit-scrollbar { display: none; }
   .timeline-legend button { flex: none; }
 
-  /* Rings: the overall one with its label in a row, the habits in a 3-column grid below. */
-  .ring-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .9rem .5rem; }
-  .ring-list li { flex-direction: column; gap: .3rem; text-align: center; min-width: 0; }
-  .ring-list .ring-label { flex-direction: column; gap: 0; max-width: 100%; }
-  .ring-list .ring-label .key { display: none; }
-  .ring-list .ring-label span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
