@@ -3,7 +3,7 @@
 
 [[category]]
 name = "Base"
-icon = "🧱"
+icon = "🗿"
 habits = [
   { name = "Workout", target = 1, unit = "10 min" },
   { name = "Food", target = 3, unit = "meals" },

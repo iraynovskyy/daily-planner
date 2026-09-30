@@ -594,11 +594,16 @@ def delete_category(
     return category
 
 
-def rename_category(session: Session, user_id: int, category_id: int, name: str) -> Category | None:
+def rename_category(
+    session: Session, user_id: int, category_id: int, name: str, icon: str | None = None
+) -> Category | None:
+    """Renames a category; `icon` (an emoji, "" to remove it) is changed only when given."""
     category = _owned(session, Category, category_id, user_id)
     if category is None:
         return None
     category.name = name.strip()
+    if icon is not None:
+        category.icon = icon.strip() or None
     session.commit()
     return category
 

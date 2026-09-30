@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -101,11 +101,18 @@ def year_page(
     session: SessionDep,
     user: UserDep,
     category: int | None = None,
-    focus: bool = False,
+    focus: bool | None = None,
+    view: Literal["all"] | None = None,
 ):
+    """Opens on Focus when some habits are picked for it, else on All (explicit: ?view=all)."""
     categories = services.list_categories(session, user)
     if category is not None and category not in {c.id for c in categories}:
         raise HTTPException(404, "Category not found")
+    all_habits = services.list_habits(session, user, active_only=True)
+    if category is not None or view == "all":
+        focus = False
+    elif focus is None:
+        focus = any(h.focus for h in all_habits)
     if focus:
         category = None
     stats = services.year_stats(session, user, year, date.today(), category, focus)
@@ -141,6 +148,6 @@ def year_page(
             "category_names": {c.id: c.name for c in categories},
             "category": category,
             "focus": focus,
-            "all_habits": services.list_habits(session, user, active_only=True),
+            "all_habits": all_habits,
         },
     )
