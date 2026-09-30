@@ -290,3 +290,42 @@ def test_month_grid_knows_its_day_count(client):
     # Phones lay each row out as a grid of --days columns (name on its own line above).
     assert client.get("/month/2026-09").text.count('<table class="month" style="--days: 30">') == 3
     assert '<table class="month" style="--days: 28">' in client.get("/month/2026-02").text
+
+
+def test_year_page(client):
+    client.post("/entries/1/2026-03-02", data={"count": 1, "golden": "true"})
+    page = client.get("/year/2026").text
+    assert page.count('class="yc') >= 2 * 365  # week strip + small calendars
+    assert 'title="Mon 2 Mar · 7% done · ⭐ 1 golden"' in page
+    assert all(t in page for t in ("Best streak", "Golden days", "Perfect days", "Average"))
+    assert all(t in page for t in ("0%", "1–39%", "40–69%", "70–99%", "100%", "golden day"))
+    assert 'href="/year/2025"' in page and 'href="/year/2027"' in page
+    # Filter by category; someone else's (or an unknown) category is a 404.
+    assert 'aria-current="page">Career' in client.get("/year/2026?category=2").text
+    assert client.get("/year/2026?category=99").status_code == 404
+    assert "Nothing tracked in 2019 yet" in client.get("/year/2019").text
+    assert client.get("/year/1999").status_code == 422
+    # Reached from the month page, and the tab bar keeps Month active.
+    assert '<a href="/year/2026">← 2026</a>' in client.get("/month/2026-09").text
+    assert re.search(r'aria-current="page">.*?<span>Month</span>', page, re.S)
+
+
+def test_short_addresses_and_manifest(client, anon_client):
+    assert (
+        client.get("/today", follow_redirects=False).headers["location"] == f"/day/{date.today()}"
+    )
+    assert (
+        client.get("/year", follow_redirects=False).headers["location"]
+        == f"/year/{date.today().year}"
+    )
+    client.post("/logout")
+    r = anon_client.get("/manifest.webmanifest")  # public: fetched without the session
+    assert r.status_code == 200 and r.headers["content-type"].startswith(
+        "application/manifest+json"
+    )
+    m = r.json()
+    assert m["start_url"] == "/today" and m["display"] == "standalone"
+    assert [s["url"] for s in m["shortcuts"]] == ["/today", "/year"]
+    for icon in m["icons"]:
+        assert anon_client.get(icon["src"]).status_code == 200
+    assert '<link rel="manifest" href="/manifest.webmanifest">' in anon_client.get("/login").text

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} · Daily Planner{% endblock %}
+{% block content %}
+{% set qs = "?category=" ~ category if category else "" %}
+<nav class="day-nav">
+  <a href="/year/{{ year - 1 }}{{ qs }}" role="button" class="outline">←</a>
+  <hgroup>
+    <h2>{{ year }}</h2>
+    <p>at a glance</p>
+  </hgroup>
+  <a href="/year/{{ year + 1 }}{{ qs }}" role="button" class="outline">→</a>
+</nav>
+
+<nav class="year-cats" aria-label="Category">
+  <a href="/year/{{ year }}"{% if not category %} aria-current="page"{% endif %}>All</a>
+  {% for c in categories %}
+    <a href="/year/{{ year }}?category={{ c.id }}"{% if category == c.id %} aria-current="page"{% endif %}>{{ c.name }}</a>
+  {% endfor %}
+</nav>
+
+{# One square per day, linked to it; the shade is that day's % (see the legend below). #}
+{% macro yc(d) -%}
+  {%- if d is none -%}<span class="yc pad"></span>
+  {%- elif d.day > today -%}<span class="yc ahead"></span>
+  {%- else -%}
+    {%- set label = d.day.strftime("%a ") ~ d.day.day ~ d.day.strftime(" %b") ~ (" · " ~ d.pct ~ "% done" if d.pct is not none else (" · nothing ticked yet" if d.day == today else " · not tracked")) ~ (" · ⭐ " ~ d.golden ~ " golden" if d.golden else "") -%}
+    <a class="yc{% if d.pct is none %} untracked{% endif %}{% if d.golden %} gold{% endif %}{% if d.day == today %} today{% endif %}"
+       {%- if d.pct is not none %} data-l="{{ d.level }}"{% endif %} href="/day/{{ d.day.isoformat() }}" title="{{ label }}" aria-label="{{ label }}"></a>
+  {%- endif -%}
+{%- endmacro %}
+
+{% if stats.tracked %}
+<div class="year-tiles">
+  <div class="year-tile">
+    <span class="k">Best streak</span>
+    {% if stats.best and stats.best.best %}
+      <span class="v">🔥 {{ stats.best.best }} day{{ "s" if stats.best.best != 1 }}</span><span class="s">{{ stats.best.habit.name }}</span>
+    {% else %}<span class="v">—</span><span class="s">no full day yet</span>{% endif %}
+  </div>
+  <div class="year-tile gold">
+    <span class="k">Golden days</span><span class="v">⭐ {{ stats.golden_days }}</span><span class="s">with a gold habit</span>
+  </div>
+  <div class="year-tile">
+    <span class="k">Perfect days</span><span class="v">{{ stats.perfect_days }}</span><span class="s">every habit done</span>
+  </div>
+  <div class="year-tile">
+    <span class="k">Average</span><span class="v">{{ stats.average }}%</span><span class="s">over {{ stats.tracked | length }} tracked days</span>
+  </div>
+</div>
+{% endif %}
+
+<section class="year-grid" aria-label="Every day of {{ year }}">
+  {# Computer: weeks as columns, Monday on top. #}
+  <div class="year-scroll">
+    <div class="year-strip" style="--weeks: {{ (cells | length / 7) | round(0, 'ceil') | int }}">
+      <div class="ys-months" aria-hidden="true">
+        {% for col, name in month_labels %}<span style="grid-column: {{ col }}">{{ name }}</span>{% endfor %}
+      </div>
+      <div class="ys-wd" aria-hidden="true"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div>
+      <div class="ys-weeks">{% for d in cells %}{{ yc(d) }}{% endfor %}</div>
+    </div>
+  </div>
+  {# Phone: twelve small calendars. #}
+  <div class="year-months">
+    {% for name, days in months %}
+      <div class="ym"><span class="ym-name">{{ name }}</span><div class="ym-days">{% for d in days %}{{ yc(d) }}{% endfor %}</div></div>
+    {% endfor %}
+  </div>
+
+  <ul class="year-legend" aria-label="What the colours mean">
+    <li><i class="yc" data-l="0"></i>0%</li>
+    <li><i class="yc" data-l="1"></i>1–39%</li>
+    <li><i class="yc" data-l="2"></i>40–69%</li>
+    <li><i class="yc" data-l="3"></i>70–99%</li>
+    <li><i class="yc" data-l="4"></i>100%</li>
+    <li><i class="yc gold" data-l="3"></i>golden day</li>
+    <li><i class="yc untracked"></i>not tracked</li>
+  </ul>
+  <p class="year-note">A day's shade is how much of it you did, like the “Done” row of a month. Tap a day to open it.</p>
+</section>
+
+{% if stats.habits %}
+<section class="year-habits-box">
+  <h3>Most consistent habits</h3>
+  <ul class="year-habits">
+    {% for h in stats.habits %}
+    <li>
+      <span class="habit-title">{{ h.habit.name }}{% if h.habit.optional %} <span class="optional-tag">optional</span>{% endif %}</span>
+      <b>{{ h.pct }}%</b>
+      <span class="bar"><i style="width: {{ h.pct }}%"></i></span>
+      <small>🔥 best {{ h.best }} day{{ "s" if h.best != 1 }}{% if h.golden %} <span class="g">⭐ {{ h.golden }} golden</span>{% endif %}</small>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<p class="year-note">Nothing tracked in {{ year }} yet.</p>
+{% endif %}
+{% endblock %}

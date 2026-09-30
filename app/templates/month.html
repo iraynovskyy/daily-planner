@@ -10,6 +10,8 @@
   <a href="/month/{{ next_month.strftime('%Y-%m') }}" role="button" class="outline">→</a>
 </nav>
 
+<p class="back-to-month"><a href="/year/{{ first.year }}">← {{ first.year }}</a></p>
+
 {% with progress_label="Overall · " %}{% include "partials/progress.html" %}{% endwith %}
 
 {% macro day_class(day) -%}

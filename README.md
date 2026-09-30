@@ -4,22 +4,24 @@
 ![Python 3.14](https://img.shields.io/badge/python-3.14-3776ab)
 ![FastAPI](https://img.shields.io/badge/FastAPI-HTMX-009688)
 
-A daily habit tracker: tick off habits each day, see the whole month as a grid, and follow your
-progress on per-category timelines. Server-rendered with FastAPI + Jinja2, made interactive with
+A daily habit tracker: tick off habits each day, see the whole month as a grid and the whole year
+at a glance, and follow your progress on per-category timelines. Server-rendered with FastAPI + Jinja2, made interactive with
 HTMX — no frontend build step.
 
 ![Month grid, dark theme](docs/screenshots/month-dark.png)
 
-| Day checklist (light) | Day checklist (dark) |
-|---|---|
-| ![Day, light theme](docs/screenshots/day-light.png) | ![Day, dark theme](docs/screenshots/day-dark.png) |
+**The whole year** on one page: every day is a square shaded by how much of it you did, a gold
+dot marks a golden day, and the records sit on top (best streak, golden and perfect days).
+
+![Year at a glance, light theme](docs/screenshots/year-light.png)
 
 **On a phone** the header links become a bottom tab bar, each habit's name sits above its checks
-so about nine days fit on screen, and charts start with the overall line (tap a habit to add its own).
+so about nine days fit on screen, and charts start with the overall line (tap a habit to add its
+own). Add it to the home screen and it opens full screen on today's checklist, like an app.
 
-| Today | Month | Timeline & rings |
-|:---:|:---:|:---:|
-| <img src="docs/screenshots/phone-today.png" width="250" alt="Today's checklist on a phone, with golden days and a streak"> | <img src="docs/screenshots/phone-month.png" width="250" alt="Month grid on a phone, habit names above their checks"> | <img src="docs/screenshots/phone-stats.png" width="250" alt="Timeline with the overall and Food lines, and progress rings, on a phone"> |
+| Today | Month | Year | Timeline & rings |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/phone-today.png" width="200" alt="Today's checklist on a phone, with golden days and a streak"> | <img src="docs/screenshots/phone-month.png" width="200" alt="Month grid on a phone, habit names above their checks"> | <img src="docs/screenshots/phone-year.png" width="200" alt="The year on a phone: records and twelve small calendars"> | <img src="docs/screenshots/phone-stats.png" width="200" alt="Timeline with the overall and Food lines, and progress rings, on a phone"> |
 
 ## Features
 - **Categories** (e.g. Base, Career, Good habits), each with its own progress bar, month grid and timeline
@@ -27,11 +29,12 @@ so about nine days fit on screen, and charts start with the overall line (tap a 
 - **Month grid**: every day at a glance; click any cell to tick it
 - **Golden days**: double-tap a habit's box when you did it especially well, and it turns into a gold star
 - **Streaks**: a 🔥 badge once a habit is done 5+ days in a row
+- **Year at a glance**: a square per day shaded by completion, best streaks, golden and perfect days, and the most consistent habits, per category
 - **Timelines** with progress rings per category; today counts once you tick something, so an unfinished day never shows as a drop to 0%
 - **Drag-and-drop** (or keyboard) reordering and per-row highlight colours
 - **Notes** in collapsible blocks (tips, ideas, comfort), editable in place and movable between blocks
 - **Light / dark theme** switch, remembered per browser
-- **Phone layout**: bottom tab bar, compact month grid, touch-friendly charts
+- **Phone layout**: bottom tab bar, compact month grid, touch-friendly charts; **installable** on the home screen, with Today and Year shortcuts on the icon
 - **Several users**, each with their own data; invite a friend with a one-time link
 
 ## Tech stack
@@ -118,7 +121,7 @@ sudo deploy/backup/restore.sh latest      # disaster recovery: replace the live 
 |---|---|
 | Passwords | argon2id hashes with a random salt each (`argon2-cffi`); plain passwords are never stored |
 | Sessions | signed cookie (`SECRET_KEY`), `HttpOnly`, `SameSite=Lax`, `Secure` with `SESSION_HTTPS_ONLY=true`; renewed on login |
-| Access | every planner router requires a login; only `/login`, `/join/…`, `/health` and `/static` are public |
+| Access | every planner router requires a login; only `/login`, `/join/…`, `/health`, `/manifest.webmanifest` and `/static` are public |
 | Data isolation | categories, habits and notes carry a `user_id`; every query and every lookup by id is scoped to the logged-in user, so another user's ids act as if they don't exist (404) |
 | Invites | one-time, random 192-bit tokens that expire after 7 days; only their SHA-256 is stored |
 | CSRF | `SameSite=Lax` + rejecting POSTs whose `Sec-Fetch-Site` / `Origin` show another site — covers forms, HTMX and `fetch()` without per-form tokens |
@@ -150,10 +153,11 @@ app/
   copy_data.py     copy all rows between databases (SQLite → Postgres)
   models.py        Category, Habit (recurring template), DailyEntry (progress per habit per day), Note, User, Invite
   services.py      business logic, no web code
-  routes/pages.py  full pages: / (month grid), /day/…, /habits
+  routes/pages.py  full pages: / (month grid), /day/…, /year/…, /habits; /today and /year shortcuts
   routes/api.py    form / HTMX endpoints that return HTML fragments
   routes/auth.py   /login, /logout, /account (invite links), /join/… (sign up with an invite)
   routes/health.py /health: liveness + database check
+  routes/pwa.py    /manifest.webmanifest: home-screen install, icon shortcuts
   templates/       Jinja HTML; partials/ are the fragments HTMX swaps in
   static/          CSS and small vanilla-JS modules (reorder, highlight, notes, timeline, rings, theme)
 migrations/        Alembic schema history

@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app import auth
 from app.config import settings
-from app.routes import api, health, pages
+from app.routes import api, health, pages, pwa
 from app.routes import auth as auth_routes
 
 log = logging.getLogger(__name__)
@@ -37,13 +37,14 @@ def create_app() -> FastAPI:
     # Schema is managed by Alembic (`alembic upgrade head`); users get starter data on creation.
     app = FastAPI(title="Daily Planner")
     app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
-    # Everything the planner shows or changes requires a login; /login, /join/…, /health and
-    # /static don't.
+    # Everything the planner shows or changes requires a login; /login, /join/…, /health,
+    # /manifest.webmanifest and /static don't.
     logged_in = [Depends(auth.require_user)]
     app.include_router(pages.router, dependencies=logged_in)
     app.include_router(api.router, dependencies=logged_in)
     app.include_router(auth_routes.router)
     app.include_router(health.router)
+    app.include_router(pwa.router)
     app.add_exception_handler(auth.NotAuthenticated, _not_authenticated)
     # Signed session cookie: HttpOnly (JS can't read it), SameSite=Lax (not sent on cross-site
     # POSTs), Secure when session_https_only is set.
