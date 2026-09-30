@@ -297,7 +297,9 @@ def test_year_page(client):
     page = client.get("/year/2026").text
     assert page.count('class="yc') >= 2 * 365  # week strip + small calendars
     assert 'title="Mon 2 Mar · 7% done · ⭐ 1 golden"' in page
-    assert all(t in page for t in ("Best streak", "Golden days", "Perfect days", "Average"))
+    assert "Perfect days" in page and "Average" in page
+    # A calm page: facts about the process, no streak or gold counters (gold stays as dots).
+    assert "Best streak" not in page and "Golden days" not in page and "🔥" not in page
     assert all(t in page for t in ("0%", "1–39%", "40–69%", "70–99%", "100%", "golden day"))
     assert 'href="/year/2025"' in page and 'href="/year/2027"' in page
     # Filter by category; someone else's (or an unknown) category is a 404.

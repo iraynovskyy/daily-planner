@@ -11,11 +11,11 @@ HTMX — no frontend build step.
 ![Month grid, dark theme](docs/screenshots/month-dark.png)
 
 **The whole year** on one page: every day is a square shaded by how much of it you did, a gold
-dot marks a golden day, and the records sit on top (best streak, golden and perfect days).
+dot marks a golden day, and two quiet facts sit on top (perfect days and the average).
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/year-light.png">
-  <img src="docs/screenshots/year-dark.png" alt="Year at a glance: records and a square per day, shaded by completion">
+  <img src="docs/screenshots/year-dark.png" alt="Year at a glance: a square per day, shaded by completion">
 </picture>
 
 **On a phone** the header links become a bottom tab bar, each habit's name sits above its checks
@@ -24,7 +24,7 @@ own). Add it to the home screen and it opens full screen on today's checklist, l
 
 | Today | Month | Year | Timeline & rings |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/phone-today.png" width="200" alt="Today's checklist on a phone, with golden days and a streak"> | <img src="docs/screenshots/phone-month.png" width="200" alt="Month grid on a phone, habit names above their checks"> | <img src="docs/screenshots/phone-year.png" width="200" alt="The year on a phone: records and twelve small calendars"> | <img src="docs/screenshots/phone-stats.png" width="200" alt="Timeline with the overall and Food lines, and progress rings, on a phone"> |
+| <img src="docs/screenshots/phone-today.png" width="200" alt="Today's checklist on a phone, with golden days and a streak"> | <img src="docs/screenshots/phone-month.png" width="200" alt="Month grid on a phone, habit names above their checks"> | <img src="docs/screenshots/phone-year.png" width="200" alt="The year on a phone: perfect days, the average and twelve small calendars"> | <img src="docs/screenshots/phone-stats.png" width="200" alt="Timeline with the overall and Food lines, and progress rings, on a phone"> |
 
 ## Features
 - **Categories** (e.g. Base, Career, Good habits), each with its own progress bar, month grid and timeline
@@ -32,7 +32,7 @@ own). Add it to the home screen and it opens full screen on today's checklist, l
 - **Month grid**: every day at a glance; click any cell to tick it
 - **Golden days**: double-tap a habit's box when you did it especially well, and it turns into a gold star
 - **Streaks**: a 🔥 badge once a habit is done 5+ days in a row
-- **Year at a glance**: a square per day shaded by completion, best streaks, golden and perfect days, and the most consistent habits, per category or for a hand-picked **Focus** set of 3–4 habits
+- **Year at a glance**: a square per day shaded by completion, perfect days, the average and the most consistent habits, per category or for a hand-picked **Focus** set of habits
 - **Timelines** with progress rings per category: smooth 7-day-average trend lines with each day as a faint dot (or a Daily view with the exact values), a line per habit to show or hide (or all at once); today counts once you tick something, so an unfinished day never shows as a drop to 0%
 - **Drag-and-drop** (or keyboard) reordering and per-row highlight colours
 - **Notes** in collapsible blocks (tips, ideas, comfort), editable in place and movable between blocks

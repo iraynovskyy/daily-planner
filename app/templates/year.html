@@ -53,16 +53,8 @@
 <p class="year-note focus-empty">No habits in Focus yet. Pick a few above and their year shows up here.</p>
 {% else %}
 {% if stats.tracked %}
+{# Quiet facts about the process, no badges: how often everything got done, and the average. #}
 <div class="year-tiles">
-  <div class="year-tile">
-    <span class="k">Best streak</span>
-    {% if stats.best and stats.best.best %}
-      <span class="v">🔥 {{ stats.best.best }} day{{ "s" if stats.best.best != 1 }}</span><span class="s">{{ stats.best.habit.name }}</span>
-    {% else %}<span class="v">—</span><span class="s">no full day yet</span>{% endif %}
-  </div>
-  <div class="year-tile gold">
-    <span class="k">Golden days</span><span class="v">⭐ {{ stats.golden_days }}</span><span class="s">with a gold habit</span>
-  </div>
   <div class="year-tile">
     <span class="k">Perfect days</span><span class="v">{{ stats.perfect_days }}</span><span class="s">every habit done</span>
   </div>
@@ -116,7 +108,6 @@
         {%- if not category %} <span class="cat">{{ category_names[h.habit.category_id] }}</span>{% endif %}</span>
       <b>{{ h.pct }}%</b>
       <span class="bar"><i data-l="{{ h.level }}" style="width: {{ h.pct }}%"></i></span>
-      <small>🔥 best {{ h.best }} day{{ "s" if h.best != 1 }}{% if h.golden %} <span class="g">⭐ {{ h.golden }} golden</span>{% endif %}</small>
     </li>
     {% endfor %}
   </ol>
