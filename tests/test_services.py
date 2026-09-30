@@ -338,3 +338,22 @@ def test_year_consistency_counts_partly_done_days(session):
     # 6 of 9 meals over 3 tracked days (7 May, today and unticked, is still open) = 67%;
     # counting only full days it would be 1 of 3 = 33%. The run stays 1: only 4 May was full.
     assert (h.pct, h.best) == (67, 1)
+
+
+def test_focus_habits(session):
+    habits = services.list_habits(session, USER)
+    workout, no_sugar = habits[0], next(h for h in habits if h.optional)
+    assert services.set_focus(session, USER, [workout.id, no_sugar.id])
+    assert {h.id for h in services.list_habits(session, USER) if h.focus} == {
+        workout.id,
+        no_sugar.id,
+    }
+    services.set_count(session, USER, workout.id, DAY, 1)
+    stats = services.year_stats(session, USER, 2026, DAY + timedelta(days=1), focus=True)
+    # Only the picked habits count, the optional one too: 1 of 2 ticks.
+    assert {h.habit.id for h in stats.habits} == {workout.id, no_sugar.id}
+    assert {d.day: d for d in stats.days}[DAY].pct == 50
+    assert not services.set_focus(session, USER, [workout.id, 999])  # not the user's
+    assert services.set_focus(session, USER, []) and not any(
+        h.focus for h in services.list_habits(session, USER)
+    )

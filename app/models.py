@@ -31,6 +31,8 @@ class Habit(SQLModel, table=True):
     sort_order: int = 0
     # Optional habits are shown for tracking but never count towards progress.
     optional: bool = False
+    # Picked for the year page's "Focus" view (the few habits being worked on right now).
+    focus: bool = False
     # Row highlight colour picked in the UI (one of services.HIGHLIGHTS), or None.
     highlight: str | None = Field(default=None, max_length=10)
     active: bool = True

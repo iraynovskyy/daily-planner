@@ -101,11 +101,14 @@ def year_page(
     session: SessionDep,
     user: UserDep,
     category: int | None = None,
+    focus: bool = False,
 ):
     categories = services.list_categories(session, user)
     if category is not None and category not in {c.id for c in categories}:
         raise HTTPException(404, "Category not found")
-    stats = services.year_stats(session, user, year, date.today(), category)
+    if focus:
+        category = None
+    stats = services.year_stats(session, user, year, date.today(), category, focus)
     # Computer: weeks as columns (Monday on top), like a contribution graph. Phone: mini months.
     lead = stats.days[0].day.weekday()
     cells = [None] * lead + stats.days
@@ -136,5 +139,7 @@ def year_page(
             "months": months,
             "categories": categories,
             "category": category,
+            "focus": focus,
+            "all_habits": services.list_habits(session, user, active_only=True),
         },
     )
