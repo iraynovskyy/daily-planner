@@ -326,3 +326,15 @@ def test_year_stats(session):
     )
     assert all(h.habit.category_id != base.id for h in career.habits)
     assert services.year_stats(session, USER, 2025, today).tracked == []
+
+
+def test_year_consistency_counts_partly_done_days(session):
+    food = services.list_habits(session, USER)[1]  # 3 checks a day
+    services.set_count(session, USER, food.id, date(2026, 5, 4), 3)
+    services.set_count(session, USER, food.id, date(2026, 5, 5), 2)
+    services.set_count(session, USER, food.id, date(2026, 5, 6), 1)
+    stats = services.year_stats(session, USER, 2026, date(2026, 5, 7))
+    [h] = [h for h in stats.habits if h.habit.id == food.id]
+    # 6 of 9 meals over 3 tracked days (7 May, today and unticked, is still open) = 67%;
+    # counting only full days it would be 1 of 3 = 33%. The run stays 1: only 4 May was full.
+    assert (h.pct, h.best) == (67, 1)
