@@ -21,6 +21,43 @@ window.habitSeries = (root, maxSlots) => {
     }));
 };
 
+// Smooth line through the points that never overshoots them (monotone cubic, as d3's
+// curveMonotoneX): no invented peaks, never above 100% or below 0%.
+function monotonePath(pts) {
+  const n = pts.length;
+  if (n < 3) return pts.map(([px, py], k) => (k ? "L" : "M") + px + "," + py).join("");
+  const dx = [], m = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx[i] = pts[i + 1][0] - pts[i][0];
+    m[i] = (pts[i + 1][1] - pts[i][1]) / dx[i];
+  }
+  const t = [m[0]];
+  for (let i = 1; i < n - 1; i++) {
+    t[i] = m[i - 1] * m[i] <= 0 ? 0 : (3 * (dx[i - 1] + dx[i])) / ((2 * dx[i] + dx[i - 1]) / m[i - 1] + (dx[i] + 2 * dx[i - 1]) / m[i]);
+  }
+  t[n - 1] = m[n - 2];
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < n - 1; i++) {
+    const h = dx[i] / 3;
+    d += `C${pts[i][0] + h},${pts[i][1] + t[i] * h} ${pts[i + 1][0] - h},${pts[i + 1][1] - t[i + 1] * h} ${pts[i + 1][0]},${pts[i + 1][1]}`;
+  }
+  return d;
+}
+
+// Consecutive non-null points, so a gap (days ahead) breaks the line instead of bridging it.
+function runs(points) {
+  const out = [];
+  let cur = [];
+  for (const p of points) {
+    if (p === null) {
+      if (cur.length) out.push(cur);
+      cur = [];
+    } else cur.push(p);
+  }
+  if (cur.length) out.push(cur);
+  return out;
+}
+
 document.querySelectorAll(".category .timeline").forEach((section) => {
   const root = section.closest(".category");
   const svg = section.querySelector(".timeline-svg");
@@ -72,7 +109,15 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
         return { ...c, value: pct(c, day) };
       }),
     };
-    series = [all, ...perHabit];
+    // Lines show a trailing 7-day average (the trend); each day's own value stays as a faint dot.
+    // The line starts once 3 days are in the window: a 1-day "average" is just that day's jump.
+    series = [all, ...perHabit].map((s) => {
+      s.points.forEach((p, i) => {
+        const week = s.points.slice(Math.max(0, i - 6), i + 1).filter((q) => q.value !== null);
+        p.avg = p.value === null || week.length < 3 ? null : week.reduce((sum, q) => sum + q.value, 0) / week.length;
+      });
+      return s;
+    });
   }
 
   function el(name, attrs, parent = svg) {
@@ -82,25 +127,42 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
     return node;
   }
 
+  let legendBuilt = false;
   function buildLegend() {
-    if (phone.matches) habits.forEach((h) => hidden.add(h.key));
-    legend.replaceChildren(
-      ...[overall, ...habits].map((s) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.setAttribute("aria-pressed", String(!hidden.has(s.key)));
-        const key = document.createElement("span");
-        key.className = "key";
-        key.style.background = s.color;
-        b.append(key, document.createTextNode(s.name));
-        b.addEventListener("click", () => {
-          hidden.has(s.key) ? hidden.delete(s.key) : hidden.add(s.key);
-          b.setAttribute("aria-pressed", String(!hidden.has(s.key)));
-          render();
-        });
-        return b;
-      }),
-    );
+    if (phone.matches && !legendBuilt) habits.forEach((h) => hidden.add(h.key));
+    legendBuilt = true;
+    // "Hide all" keeps only the category's overall line; "Show all" brings every line back.
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "toggle-all";
+    const chips = [overall, ...habits].map((s) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.key = s.key;
+      const key = document.createElement("span");
+      key.className = "key";
+      key.style.background = s.color;
+      b.append(key, document.createTextNode(s.name));
+      b.addEventListener("click", () => {
+        hidden.has(s.key) ? hidden.delete(s.key) : hidden.add(s.key);
+        sync();
+      });
+      return b;
+    });
+    const sync = () => {
+      for (const b of chips) b.setAttribute("aria-pressed", String(!hidden.has(b.dataset.key)));
+      const showAll = [overall, ...habits].some((s) => hidden.has(s.key));
+      toggle.textContent = showAll ? "Show all" : "Hide all";
+      toggle.title = showAll ? "Show every habit's line" : "Keep only the overall line";
+      render();
+    };
+    toggle.addEventListener("click", () => {
+      if (toggle.textContent === "Show all") hidden.clear();
+      else habits.forEach((h) => hidden.add(h.key));
+      sync();
+    });
+    legend.replaceChildren(toggle, ...chips);
+    sync();
   }
 
   function render() {
@@ -140,17 +202,20 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
     }
 
     // Draw in reverse so habit 1 sits on top; the overall line stays underneath.
+    const dotted = visible.length <= 2; // daily dots only while they don't turn into confetti
     for (const s of [...visible].reverse()) {
-      const d = s.points
-        .map((p, i) => (p.value === null ? null : `${x(i)},${y(p.value)}`))
-        .filter(Boolean)
-        .map((pt, k) => (k ? "L" : "M") + pt)
-        .join("");
-      if (!d) continue;
+      const parts = runs(s.points.map((p, i) => (p.avg === null ? null : [x(i), y(p.avg)])));
+      if (!parts.length) continue;
+      const d = parts.map(monotonePath).join("");
       if (s.key === "overall") {
-        // Soft fill under the overall line (shown on phones only, see CSS).
-        const pts = s.points.map((p, i) => (p.value === null ? null : i)).filter((i) => i !== null);
-        el("path", { class: "area", d: `${d}L${x(pts.at(-1))},${y(0)}L${x(pts[0])},${y(0)}Z` });
+        for (const r of parts) {
+          el("path", { class: "area", d: `${monotonePath(r)}L${r.at(-1)[0]},${y(0)}L${r[0][0]},${y(0)}Z` });
+        }
+      }
+      if (dotted) {
+        s.points.forEach((p, i) => {
+          if (p.value !== null) el("circle", { class: "day-dot", cx: x(i), cy: y(p.value), r: 2.2, fill: s.color });
+        });
       }
       el("path", { class: "halo", d });
       el("path", { class: s.key === "overall" ? "line overall" : "line", d, stroke: s.color });
@@ -160,9 +225,9 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       // Spread end labels so converging lines (e.g. several at 0%) don't collide; a leader ties each to its line.
       // Each line is labelled at its last plotted day (today may not be plotted yet).
       const labels = visible
-        .map((s) => ({ s, i: s.points.findLastIndex((p) => p.value !== null) }))
+        .map((s) => ({ s, i: s.points.findLastIndex((p) => p.avg !== null) }))
         .filter((l) => l.i >= 0)
-        .map((l) => ({ ...l, v: l.s.points[l.i].value }))
+        .map((l) => ({ ...l, v: Math.round(l.s.points[l.i].avg) }))
         .map((l) => ({ ...l, ly: y(l.v), ty: y(l.v) }))
         .sort((a, b) => a.ly - b.ly);
       for (let k = 1; k < labels.length; k++) labels[k].ty = Math.max(labels[k].ty, labels[k - 1].ty + 14);
@@ -192,7 +257,7 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
     hover.cross.setAttribute("x2", x(i));
     hover.cross.setAttribute("visibility", "visible");
     for (const { s, node } of hover.dots) {
-      const v = s.points[i].value;
+      const v = s.points[i].avg;
       node.setAttribute("visibility", v === null ? "hidden" : "visible");
       if (v !== null) {
         node.setAttribute("cx", x(i));
@@ -202,7 +267,8 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
 
     const date = document.createElement("div");
     date.className = "tip-date";
-    date.textContent = days[i].date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    date.textContent =
+      days[i].date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) + " · 7-day average";
     tip.replaceChildren(date);
     for (const s of hover.visible) {
       const p = s.points[i];
@@ -212,11 +278,11 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       key.className = "key";
       key.style.background = s.color;
       const value = document.createElement("b");
-      value.textContent = p.value === null ? "—" : p.value + "%";
+      value.textContent = p.avg === null ? "—" : Math.round(p.avg) + "%";
       const name = document.createElement("span");
       name.textContent = s.name;
       const count = document.createElement("span");
-      count.textContent = `${p.done}/${p.target}`;
+      count.textContent = p.value === null ? "—" : `that day ${p.value}% · ${p.done}/${p.target}`;
       row.append(key, value, name, count);
       tip.appendChild(row);
     }
