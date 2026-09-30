@@ -154,7 +154,26 @@ table.month .future { opacity: .55; }
 .timeline-svg .axis-label { fill: var(--pico-muted-color); font-size: 11px; }
 .timeline-svg .halo { fill: none; stroke: var(--pico-background-color); stroke-width: 5; stroke-linejoin: round; stroke-linecap: round; }
 .timeline-svg .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.timeline-svg .area { display: none; }
+.timeline-svg .area { fill: var(--series-overall); opacity: .12; }
+.timeline-svg .line.overall { stroke-width: 2.5; }
+.timeline-svg .day-dot { opacity: .45; }
+/* "Show all" / "Hide all": a quieter, dashed chip at the start of the legend */
+.timeline-legend .toggle-all { border-style: dashed; color: var(--ink-muted); }
+.timeline-legend .toggle-all:hover { color: var(--ink); }
+/* Trend | Daily: a small segmented switch at the end of the legend row */
+.chart-mode {
+  display: inline-flex; flex: none; margin-left: auto; padding: 2px; gap: 2px;
+  border: 1px solid var(--pico-muted-border-color); border-radius: 999px;
+}
+.chart-mode button {
+  margin: 0; padding: .15rem .7rem; font-size: .75rem; line-height: 1.4; border: 0; border-radius: 999px;
+  background: transparent; color: var(--ink-muted); cursor: pointer;
+}
+.chart-mode button:hover { color: var(--ink); }
+.chart-mode button[aria-checked="true"] {
+  background: color-mix(in srgb, var(--pico-primary) 18%, transparent); color: var(--ink); font-weight: 600;
+}
+.chart-mode button:focus-visible { outline: 2px solid var(--pico-primary); outline-offset: 1px; }
 .timeline-svg .leader { stroke-width: 1; opacity: .6; }
 .timeline-svg .end-label { fill: var(--pico-color); font-size: 11px; }
 .timeline-svg .today-mark { stroke: var(--pico-muted-color); stroke-width: 1; opacity: .5; }
@@ -646,7 +665,6 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
   .timeline-chart { margin-inline: -.6rem; }
   .timeline-svg { height: 250px; }
   .timeline-svg .line.overall { stroke-width: 2.75; }
-  .timeline-svg .area { display: inline; fill: var(--series-overall); opacity: .12; }
   .timeline-legend {
     flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
     margin-inline: -.25rem; padding: .1rem .25rem;
