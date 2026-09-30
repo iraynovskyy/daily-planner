@@ -291,3 +291,38 @@ def test_golden_day(session):
     assert not services.set_count(session, USER, food.id, DAY, 2).golden
     assert not services.set_count(session, USER, food.id, DAY, 3).golden
     assert not services.set_count(session, USER, food.id, DAY, 2, golden=True).golden
+
+
+def test_year_stats(session):
+    base = services.list_categories(session, USER)[0]
+    workout, food = services.list_habits(session, USER)[:2]
+    start = date(2026, 3, 2)
+    for back in range(4):  # Workout done 4 days in a row, the last one golden
+        services.set_count(
+            session, USER, workout.id, start + timedelta(days=back), 1, golden=back == 3
+        )
+    services.set_count(session, USER, food.id, start, 3)
+    today = date(2026, 3, 10)
+    stats = services.year_stats(session, USER, 2026, today)
+    by_day = {d.day: d for d in stats.days}
+    assert len(stats.days) == 365
+    assert by_day[date(2026, 3, 1)].pct is None  # before the first tick: not tracked
+    assert by_day[date(2026, 3, 11)].pct is None  # ahead
+    assert by_day[today].pct is None  # today, nothing ticked yet: still open
+    # 2 Mar: Workout 1/1 + Food 3/3 of 15 required ticks (optional No sugar doesn't count).
+    assert by_day[start].pct == 27 and by_day[start].level == 1
+    assert by_day[date(2026, 3, 5)].golden == 1 and stats.golden_days == 1
+    assert by_day[date(2026, 3, 6)].pct == 0 and by_day[date(2026, 3, 6)].level == 0
+    assert len(stats.tracked) == 8 and stats.perfect_days == 0
+    assert stats.best.habit.id == workout.id and stats.best.best == 4
+    top = stats.habits[0]
+    assert (top.habit.id, top.pct, top.golden) == (workout.id, 50, 1)  # 4 of 8 tracked days
+
+    # Once something is ticked today, today counts; one category only counts its own habits.
+    services.set_count(session, USER, food.id, today, 3)
+    assert {d.day: d for d in services.year_stats(session, USER, 2026, today).days}[today].pct == 20
+    career = services.year_stats(
+        session, USER, 2026, today, services.list_categories(session, USER)[1].id
+    )
+    assert all(h.habit.category_id != base.id for h in career.habits)
+    assert services.year_stats(session, USER, 2025, today).tracked == []

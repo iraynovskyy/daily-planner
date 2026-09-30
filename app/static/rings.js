@@ -21,6 +21,7 @@ document.querySelectorAll(".category .timeline.with-rings").forEach((section) =>
       { done: 0, target: 0 },
     );
   const pct = (c) => (c.target ? Math.round((100 * c.done) / c.target) : null);
+  const ticked = (h, day) => root.querySelectorAll(`#cell-${h.key}-${day} input:checked`).length > 0;
 
   function ring(value, color, size) {
     const stroke = size > 60 ? 8 : 5;
@@ -84,10 +85,15 @@ document.querySelectorAll(".category .timeline.with-rings").forEach((section) =>
       box.replaceChildren(caption, empty);
       return;
     }
-    const perHabit = habits.map((h) => ({ ...h, c: count(h, days) }));
-    const all = perHabit
-      .filter((h) => !h.optional)
-      .reduce((s, h) => ({ done: s.done + h.c.done, target: s.target + h.c.target }), { done: 0, target: 0 });
+    // Today is still in progress: a habit's ring counts it once that habit is ticked, the overall
+    // ring once anything in the category is (same rule as the timeline). A hovered day always counts.
+    const past = days.filter((d) => d !== today);
+    const perHabit = habits.map((h) => ({ ...h, c: count(h, focusDay || ticked(h, today) ? days : past) }));
+    const required = habits.filter((h) => !h.optional);
+    const started = focusDay || required.some((h) => ticked(h, today));
+    const all = required
+      .map((h) => count(h, started ? days : past))
+      .reduce((s, c) => ({ done: s.done + c.done, target: s.target + c.target }), { done: 0, target: 0 });
     const list = document.createElement("ul");
     list.className = "ring-list";
     list.append(

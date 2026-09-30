@@ -67,6 +67,54 @@ class CategoryMonth:
         return progress([i for d in self.days for i in d.items])
 
 
+@dataclass
+class YearDay:
+    day: date
+    pct: int | None = None  # None: not tracked (before the first tick, ahead, or today unticked)
+    golden: int = 0  # habits marked golden that day
+
+    @property
+    def level(self) -> int:
+        """Shade of the day's square: 0 = nothing done … 4 = everything done."""
+        p = self.pct or 0
+        return 0 if p == 0 else 1 if p < 40 else 2 if p < 70 else 3 if p < 100 else 4
+
+
+@dataclass
+class HabitYear:
+    habit: Habit
+    pct: int  # share of its tracked days that were fully done
+    best: int  # longest run of fully done days this year
+    golden: int
+
+
+@dataclass
+class YearStats:
+    days: list[YearDay]
+    habits: list[HabitYear]  # most consistent first
+
+    @property
+    def tracked(self) -> list[YearDay]:
+        return [d for d in self.days if d.pct is not None]
+
+    @property
+    def average(self) -> int | None:
+        t = self.tracked
+        return round(sum(d.pct for d in t) / len(t)) if t else None
+
+    @property
+    def perfect_days(self) -> int:
+        return sum(d.pct == 100 for d in self.tracked)
+
+    @property
+    def golden_days(self) -> int:
+        return sum(d.golden > 0 for d in self.days)
+
+    @property
+    def best(self) -> HabitYear | None:
+        return max(self.habits, key=lambda h: h.best, default=None)
+
+
 def seed_user(session: Session, user_id: int, seed_file: Path | None = None) -> None:
     """Gives a user without habits the categories, habits and notes from the seed TOML file."""
     if session.exec(select(Habit).where(Habit.user_id == user_id)).first() is not None:
@@ -285,6 +333,80 @@ def streaks(
         current = run if dates[-1] >= today - timedelta(days=1) else 0
         result[hid] = Streak(current, best)
     return result
+
+
+def year_stats(
+    session: Session, user_id: int, year: int, today: date, category_id: int | None = None
+) -> YearStats:
+    """Every day of `year` with its completion %, plus each habit's consistency and best run.
+
+    A day's % is counted like the month grid's "Done" row: required habits that are active, or
+    that have progress in that month. Days before the user's first tick and days ahead aren't
+    tracked; today counts once something is ticked. `category_id` limits it to one category.
+    """
+    first, last = date(year, 1, 1), date(year, 12, 31)
+    habits = [
+        h
+        for h in list_habits(session, user_id)
+        if category_id is None or h.category_id == category_id
+    ]
+    entries = [e for e in _entries(session, user_id, first, last) if e.count_done > 0]
+    ids = {h.id for h in habits}
+    by_key = {(e.habit_id, e.date): e for e in entries if e.habit_id in ids}
+    with_history = {(e.habit_id, e.date.month) for e in by_key.values()}
+    started = min((e.date for e in entries), default=None)  # the user's first tick this year
+    if started is not None:
+        earlier = session.exec(
+            select(DailyEntry.date)
+            .join(Habit, col(Habit.id) == col(DailyEntry.habit_id))
+            .where(Habit.user_id == user_id, DailyEntry.count_done > 0, DailyEntry.date < first)
+            .limit(1)
+        ).first()
+        if earlier is not None:
+            started = first
+
+    def done(h: Habit, d: date) -> bool:
+        e = by_key.get((h.id, d))
+        return e is not None and e.count_done >= h.target_count
+
+    days, runs = [], {h.id: [0, 0, 0, 0] for h in habits}  # counted, done, run, best
+    golden = {h.id: 0 for h in habits}
+    for n in range((last - first).days + 1):
+        d = first + timedelta(days=n)
+        if started is None or d < started or d > today:
+            days.append(YearDay(d))
+            continue
+        counted = [h for h in habits if h.active or (h.id, d.month) in with_history]
+        required = [h for h in counted if not h.optional]
+        target = sum(h.target_count for h in required)
+        ticks = sum(
+            min(by_key[h.id, d].count_done, h.target_count) for h in required if (h.id, d) in by_key
+        )
+        gold = [h for h in counted if done(h, d) and by_key[h.id, d].golden]
+        for h in gold:
+            golden[h.id] += 1
+        if d == today and not any((h.id, d) in by_key for h in counted):
+            days.append(YearDay(d, golden=len(gold)))  # today, nothing ticked yet: still open
+            continue
+        days.append(YearDay(d, round(100 * ticks / target) if target else None, len(gold)))
+        for h in counted:
+            r = runs[h.id]
+            if d == today and (h.id, d) not in by_key:
+                continue  # today is still open for this habit
+            r[0] += 1
+            if done(h, d):
+                r[1] += 1
+                r[2] += 1
+                r[3] = max(r[3], r[2])
+            else:
+                r[2] = 0
+    stats = [
+        HabitYear(h, round(100 * runs[h.id][1] / runs[h.id][0]), runs[h.id][3], golden[h.id])
+        for h in habits
+        if runs[h.id][0]
+    ]
+    stats.sort(key=lambda s: (-s.pct, -s.best))
+    return YearStats(days, stats)
 
 
 def progress(items: list[DayItem]) -> int:

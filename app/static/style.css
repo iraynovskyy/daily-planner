@@ -22,6 +22,8 @@ table.month thead th:first-child, table.month tfoot th[scope=row] {
 .category-head:hover .cat-icon { filter: none; opacity: 1; }
 
 /* Compact top: nav, title and arrows take little room so the checklist/grid gets the focus */
+/* Installed on an iPhone the page runs under the status bar: keep the header below it (0 elsewhere). */
+body { padding-top: env(safe-area-inset-top); }
 body > header.container { padding-block: .25rem; }
 body > header nav li { padding-block: .35rem; }
 body > main.container { padding-block: 0 2rem; }
@@ -487,6 +489,80 @@ body { transition: background-color .25s, color .25s; }
   .golden input[type=checkbox]:checked, .gold-pop input[type=checkbox]:checked { animation: none; }
 }
 
+/* --- Year page: every day as a square, shaded by how much of it was done ------------------- */
+:root {
+  --yl0: #e3e8ef; --yl1: #c3dcf1; --yl2: #86bde6; --yl3: #3f94cf; --yl4: #0172ad;
+  --y-ahead: #e6eaef;
+}
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --yl0: #242a36; --yl1: #0e3a5c; --yl2: #0f5f94; --yl3: #1689cc; --yl4: #4cc2ff; --y-ahead: #222835;
+  }
+}
+:root[data-theme="dark"] {
+  --yl0: #242a36; --yl1: #0e3a5c; --yl2: #0f5f94; --yl3: #1689cc; --yl4: #4cc2ff; --y-ahead: #222835;
+}
+.year-cats { display: flex; justify-content: flex-start; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 1rem; }
+.year-cats a {
+  padding: .2rem .8rem; border-radius: 999px; border: 1px solid var(--pico-muted-border-color);
+  color: var(--pico-muted-color); text-decoration: none; font-size: .85rem;
+}
+.year-cats a[aria-current="page"] { color: var(--pico-color); border-color: var(--pico-primary); }
+.year-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; margin-bottom: 1.25rem; }
+.year-tile {
+  display: grid; gap: .1rem; padding: .7rem .9rem; border-radius: var(--pico-border-radius);
+  background: var(--pico-card-background-color); box-shadow: var(--pico-card-box-shadow);
+}
+.year-tile .k { font-size: .7rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--pico-muted-color); }
+.year-tile .v { font-size: 1.4rem; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.year-tile .s { font-size: .75rem; color: var(--pico-muted-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.year-tile.gold .v { color: var(--gold-text); }
+
+.yc { display: block; width: 11px; height: 11px; border-radius: 2px; background: var(--yl0); position: relative; }
+.yc[data-l="1"] { background: var(--yl1); }
+.yc[data-l="2"] { background: var(--yl2); }
+.yc[data-l="3"] { background: var(--yl3); }
+.yc[data-l="4"] { background: var(--yl4); }
+.yc.pad { background: transparent; }
+.yc.ahead, .yc.untracked { background: transparent; box-shadow: inset 0 0 0 1px var(--y-ahead); }
+.yc.today { box-shadow: 0 0 0 1.5px var(--pico-color); }
+/* Golden day: a gold dot in the corner */
+.yc.gold::after {
+  content: ""; position: absolute; right: -1.5px; top: -1.5px; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gold); box-shadow: 0 0 0 1px var(--pico-background-color), 0 0 4px var(--gold-glow);
+}
+a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline-offset: 1px; }
+
+/* The week strip is centred, with squares up to 15px that shrink to fit narrower screens. */
+.year-grid { container-type: inline-size; }
+.year-scroll { overflow-x: auto; padding: 2px; }
+.year-strip {
+  --yc: clamp(10px, calc((100cqi - 44px) / 53 - 2px), 15px);
+  display: grid; grid-template-columns: auto auto; gap: 4px 6px; width: max-content; margin-inline: auto;
+}
+.ys-months { grid-column: 2; display: grid; grid-template-columns: repeat(var(--weeks), calc(var(--yc) + 2px)); font-size: .72rem; color: var(--pico-muted-color); height: 1rem; }
+.ys-months span { white-space: nowrap; }
+.ys-wd { display: grid; grid-template-rows: repeat(7, var(--yc)); gap: 2px; font-size: .64rem; line-height: var(--yc); color: var(--pico-muted-color); }
+.ys-weeks { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, var(--yc)); grid-auto-columns: var(--yc); gap: 2px; }
+.ys-weeks .yc { width: var(--yc); height: var(--yc); border-radius: 3px; }
+.year-grid .year-legend { justify-content: center; }
+.year-grid .year-note { text-align: center; }
+.year-months { display: none; }
+.year-legend { list-style: none; display: flex; flex-wrap: wrap; gap: .3rem 1rem; padding: 0; margin: .9rem 0 .3rem; font-size: .75rem; color: var(--pico-muted-color); }
+.year-legend li { list-style: none; display: flex; align-items: center; gap: .35rem; margin: 0; }
+.year-note { font-size: .78rem; color: var(--pico-muted-color); }
+
+.year-habits-box { margin-top: 1.5rem; }
+.year-habits-box h3 { font-size: 1rem; }
+.year-habits { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: .9rem 2rem; }
+.year-habits li { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem .6rem; align-items: center; margin: 0; }
+.year-habits .habit-title { font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.year-habits b { font-variant-numeric: tabular-nums; font-size: .9rem; }
+.year-habits .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--yl0); overflow: hidden; }
+.year-habits .bar i { display: block; height: 100%; border-radius: 3px; background: var(--pico-primary); }
+.year-habits small { grid-column: 1 / -1; color: var(--pico-muted-color); font-size: .75rem; }
+.year-habits .g { color: var(--gold-text); margin-left: .6rem; }
+
 /* --- Phones: tab bar at the bottom instead of the header links -------------------------------- */
 /* Everything below only applies under 700px; wider screens look exactly as before. */
 .tabbar, .mobile-only { display: none; }
@@ -529,6 +605,17 @@ body { transition: background-color .25s, color .25s; }
   body:has(.tabbar) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 
   .account-logout { margin-top: 2rem; }
+
+  /* Year page: 2 record tiles per row and twelve small calendars instead of the week strip. */
+  .year-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .year-scroll { display: none; }
+  .year-months { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .9rem .6rem; }
+  .ym { display: grid; gap: .25rem; }
+  .ym-name { font-size: .72rem; font-weight: 600; color: var(--pico-muted-color); }
+  .ym-days { display: grid; grid-template-columns: repeat(7, 13px); gap: 2px; }
+  .ym .yc { width: 13px; height: 13px; border-radius: 3px; }
+  .year-grid .year-legend { justify-content: flex-start; }
+  .year-grid .year-note { text-align: left; }
 
   /* Month grid: each habit is its name on one line and its checks on the next, so the days get
      the whole width (~9 visible instead of 3). Every row is a grid of --days equal columns; the
