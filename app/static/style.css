@@ -520,14 +520,17 @@ body { transition: background-color .25s, color .25s; }
 :root {
   --yl0: #e3e8ef; --yl1: #c3dcf1; --yl2: #86bde6; --yl3: #3f94cf; --yl4: #0172ad;
   --y-ahead: #e6eaef;
+  --gold-quiet: #8c6a2e; /* antique gold: warm and muted, not the bright star yellow */
 }
 @media only screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --yl0: #242a36; --yl1: #0e3a5c; --yl2: #0f5f94; --yl3: #1689cc; --yl4: #4cc2ff; --y-ahead: #222835;
+    --gold-quiet: #c9a961;
   }
 }
 :root[data-theme="dark"] {
   --yl0: #242a36; --yl1: #0e3a5c; --yl2: #0f5f94; --yl3: #1689cc; --yl4: #4cc2ff; --y-ahead: #222835;
+  --gold-quiet: #c9a961;
 }
 .year-cats { display: flex; justify-content: flex-start; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 1rem; }
 .year-cats a {
@@ -537,10 +540,9 @@ body { transition: background-color .25s, color .25s; }
 .year-cats a[aria-current="page"] { color: var(--pico-color); border-color: var(--pico-primary); }
 .year-cats .focus-chip { display: inline-flex; align-items: center; gap: .4rem; }
 /* A light touch of gold: a small dot, and when selected a thin gold outline and warm text. */
-.year-cats .focus-chip::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); opacity: .8; }
+.year-cats .focus-chip::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--gold-quiet); }
 .year-cats .focus-chip[aria-current="page"] {
-  color: color-mix(in srgb, var(--gold-text) 65%, var(--pico-color));
-  border-color: color-mix(in srgb, var(--gold) 50%, var(--pico-muted-border-color));
+  color: var(--gold-quiet); border-color: color-mix(in srgb, var(--gold-quiet) 60%, transparent);
 }
 .year-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin: 0 auto 1.25rem; max-width: 34rem; }
 .year-tile {
