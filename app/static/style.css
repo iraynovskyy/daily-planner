@@ -535,6 +535,14 @@ body { transition: background-color .25s, color .25s; }
   color: var(--pico-muted-color); text-decoration: none; font-size: .85rem;
 }
 .year-cats a[aria-current="page"] { color: var(--pico-color); border-color: var(--pico-primary); }
+.year-cats .focus-chip { display: inline-flex; align-items: center; gap: .4rem; }
+.year-cats .focus-chip::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 4px var(--gold-glow);
+}
+.year-cats .focus-chip[aria-current="page"] {
+  color: var(--gold-text); border-color: color-mix(in srgb, var(--gold) 70%, transparent);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
 .year-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin: 0 auto 1.25rem; max-width: 34rem; }
 .year-tile {
   display: grid; gap: .1rem; padding: .7rem .9rem; border-radius: var(--pico-border-radius);

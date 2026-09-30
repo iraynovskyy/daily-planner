@@ -301,7 +301,7 @@ def test_year_page(client):
     # A calm page: facts about the process, no streak or gold counters (gold stays as dots).
     assert "Best streak" not in page and "Golden days" not in page and "🔥" not in page
     assert all(t in page for t in ("0%", "1–39%", "40–69%", "70–99%", "100%", "golden day"))
-    assert 'href="/year/2025"' in page and 'href="/year/2027"' in page
+    assert 'href="/year/2025?view=all"' in page and 'href="/year/2027?view=all"' in page
     # Filter by category; someone else's (or an unknown) category is a 404.
     assert 'aria-current="page">Career' in client.get("/year/2026?category=2").text
     assert client.get("/year/2026?category=99").status_code == 404
@@ -334,8 +334,9 @@ def test_short_addresses_and_manifest(client, anon_client):
 
 
 def test_year_focus_view(client):
-    page = client.get("/year/2026").text
+    page = client.get("/year/2026").text  # nothing picked yet: opens on All
     assert page.index(">All<") < page.index(">Focus<") < page.index(">Base<")  # All · Focus · Base…
+    assert 'href="/year/2026?view=all" aria-current="page">All' in page
     empty = client.get("/year/2026?focus=1").text
     assert '<details class="focus-pick" open>' in empty and "No habits in Focus yet" in empty
     r = client.post("/habits/focus", data={"year": 2026, "ids": [1, 6]}, follow_redirects=False)
@@ -344,4 +345,8 @@ def test_year_focus_view(client):
     assert "Choose habits · 2 picked" in picked and '<details class="focus-pick">' in picked
     assert 'aria-current="page" title="Only the habits you picked">Focus' in picked
     assert 'href="/year/2025?focus=1"' in picked  # year arrows stay in Focus
+    # Once something is picked, the page opens on Focus; All stays one tap away.
+    assert 'class="focus-chip" aria-current="page"' in client.get("/year/2026").text
+    all_view = client.get("/year/2026?view=all").text
+    assert 'aria-current="page">All' in all_view and 'href="/year/2025?view=all"' in all_view
     assert client.post("/habits/focus", data={"year": 2026, "ids": [999]}).status_code == 400
