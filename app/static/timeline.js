@@ -49,8 +49,10 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       const boxes = [...root.querySelectorAll(`#cell-${h.key}-${day} input[type=checkbox]`)];
       return { done: boxes.filter((b) => b.checked).length, target: boxes.length };
     };
-    // Future days have no progress yet: leave a gap rather than plotting 0%.
-    const pct = (c, day) => (day > today || !c.target ? null : Math.round((100 * c.done) / c.target));
+    // Future days have no progress yet: leave a gap rather than plotting 0%. Today is still in
+    // progress, so it shows only once something is ticked (from tomorrow a 0 counts as a 0).
+    const pct = (c, day) =>
+      day > today || !c.target || (day === today && !c.done) ? null : Math.round((100 * c.done) / c.target);
     const perHabit = habits.map((h) => ({
       ...h,
       points: days.map(({ day }) => {
@@ -156,9 +158,11 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
 
     if (labelled) {
       // Spread end labels so converging lines (e.g. several at 0%) don't collide; a leader ties each to its line.
+      // Each line is labelled at its last plotted day (today may not be plotted yet).
       const labels = visible
-        .map((s) => ({ s, v: s.points[lastIdx].value }))
-        .filter((l) => l.v !== null)
+        .map((s) => ({ s, i: s.points.findLastIndex((p) => p.value !== null) }))
+        .filter((l) => l.i >= 0)
+        .map((l) => ({ ...l, v: l.s.points[l.i].value }))
         .map((l) => ({ ...l, ly: y(l.v), ty: y(l.v) }))
         .sort((a, b) => a.ly - b.ly);
       for (let k = 1; k < labels.length; k++) labels[k].ty = Math.max(labels[k].ty, labels[k - 1].ty + 14);
@@ -166,7 +170,7 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       if (overflow > 0) labels.forEach((l) => (l.ty -= overflow));
       const lx = left + iw + 10;
       for (const l of labels) {
-        el("line", { class: "leader", x1: x(lastIdx) + 3, y1: l.ly, x2: lx - 2, y2: l.ty, style: `stroke: ${l.s.color}` });
+        el("line", { class: "leader", x1: x(l.i) + 3, y1: l.ly, x2: lx - 2, y2: l.ty, style: `stroke: ${l.s.color}` });
         const label = el("text", { class: "end-label", x: lx, y: l.ty + 4 });
         label.textContent = narrow ? `${l.v}%` : `${l.v}% ${l.s.name}`;
         if (narrow) label.style.fill = l.s.color;
