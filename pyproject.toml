@@ -30,5 +30,9 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 
+[tool.ruff.lint.per-file-ignores]
+# The translation table's keys are the exact English sentences, which can't be wrapped.
+"app/i18n.py" = ["E501"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

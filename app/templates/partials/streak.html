@@ -2,4 +2,4 @@
    month view can swap it out-of-band after a check (`streak_oob`). #}
 {% set s = streaks.get(h.id) if streaks else none %}
 <span class="streak" id="streak-{{ h.id }}"{% if streak_oob %} hx-swap-oob="true"{% endif %}
-  {%- if s and s.current >= 5 %} title="{{ s.current }} days in a row · best {{ s.best }}">🔥 {{ s.current }}{% else %}>{% endif %}</span>
+  {%- if s and s.current >= 5 %} title="{{ _('{n} days in a row · best {best}', n=s.current, best=s.best) }}">🔥 {{ s.current }}{% else %}>{% endif %}</span>

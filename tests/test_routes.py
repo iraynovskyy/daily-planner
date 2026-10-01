@@ -411,3 +411,66 @@ def test_export_csv(client):
         "2026-09-27,Base,Workout,1,1,yes",
     ]
     assert r.content.startswith("﻿".encode())  # BOM: Excel reads the names right
+
+
+# --- Ukrainian ------------------------------------------------------------------------------------
+
+
+def _english_texts():
+    """Every text the pages and scripts show (what `_()` and `t()` are called with)."""
+    import glob
+
+    texts = set()
+    for path in glob.glob("app/templates/**/*.html", recursive=True):
+        src = open(path, encoding="utf-8").read()
+        texts |= {m.group(2) for m in re.finditer(r"""(?<![\w.])_\(\s*(["'])(.*?)\1""", src)}
+        texts |= {m.group(2) for m in re.finditer(r"""(?<![\w.])t\(\s*(["'])(.*?)\1""", src)}
+    for path in glob.glob("app/static/*.js"):
+        src = open(path, encoding="utf-8").read()
+        texts |= {m.group(2) for m in re.finditer(r"""(?<![\w.])t\(\s*(["'])(.*?)\1""", src)}
+    return texts
+
+
+def test_every_text_has_a_ukrainian_translation():
+    from app import i18n, services
+
+    texts = _english_texts() | set(services.NOTE_KINDS.values())
+    texts |= {c.capitalize() for c in services.HIGHLIGHTS}
+    missing = sorted(t for t in texts if t not in i18n.UK)
+    assert missing == []
+    assert set(i18n.JS_TEXTS) <= set(i18n.UK)
+
+
+def test_language_switch(client, session):
+    from app.models import User
+
+    page = client.get("/day/2026-10-01").text
+    assert '<html lang="en">' in page and "Thursday" in page and "01 October 2026" in page
+    r = client.post(
+        "/language", data={"lang": "uk", "next": "/day/2026-10-01"}, follow_redirects=False
+    )
+    assert r.status_code == 303 and r.headers["location"] == "/day/2026-10-01"
+    page = client.get("/day/2026-10-01").text
+    assert '<html lang="uk">' in page and "Четвер" in page and "1 жовтня 2026" in page
+    assert ">Звички</a>" in page and ">Сьогодні</span>" in page and "Загалом · 0% виконано" in page
+    assert "<h2>Жовтень</h2>" in client.get("/month/2026-10").text
+    account = client.get("/account").text
+    assert 'value="uk" lang="uk"\n            aria-pressed="true">Українська' in account
+    # Saved on the user: it survives logging out and back in.
+    assert session.get(User, 1).language == "uk"
+    client.post("/logout")
+    assert "Увійти" in client.get("/login").text
+    client.cookies.clear()
+    assert ">Log in</h2>" in client.get("/login").text.replace("<h2>", ">")
+    client.post("/login", data={"username": "tester", "password": "correct horse battery"})
+    assert "Четвер" in client.get("/day/2026-10-01").text
+    assert client.post("/language", data={"lang": "fr"}).status_code == 400
+
+
+def test_browser_language_and_messages(anon_client):
+    uk = {"Accept-Language": "uk-UA,uk;q=0.9,en;q=0.8"}
+    page = anon_client.get("/login", headers=uk).text.replace("&#39;", "'")  # HTML-escaped '
+    assert "Ім'я користувача" in page
+    r = anon_client.post("/login", data={"username": "x", "password": "y"}, headers=uk)
+    assert "Неправильне ім'я користувача або пароль." in r.text.replace("&#39;", "'")
+    assert "Username" in anon_client.get("/login").text  # no preference: English

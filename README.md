@@ -40,6 +40,7 @@ own). Add it to the home screen and it opens full screen on today's checklist, l
 - **Phone layout**: bottom tab bar, compact month grid, touch-friendly charts; **installable** on the home screen, with Today and Year shortcuts on the icon
 - **Several users**, each with their own data; invite a friend with a one-time link
 - **Account**: change your password, and download all your ticks as a CSV (opens in Excel / Google Sheets)
+- **English and Ukrainian**: pick the language in Account (or on the login page); dates use proper Ukrainian forms ("1 жовтня")
 
 ## Tech stack
 | Layer | Choice |
@@ -153,6 +154,7 @@ SQLite and PostgreSQL, and builds the Docker image — on every push and pull re
 app/
   main.py          app factory, static files, routers
   auth.py          password hashing, invites, login rate limiting, CSRF middleware
+  i18n.py          English / Ukrainian texts and date formats
   create_user.py   CLI: create a user / reset a password
   copy_data.py     copy all rows between databases (SQLite → Postgres)
   models.py        Category, Habit (recurring template), DailyEntry (progress per habit per day), Note, User, Invite

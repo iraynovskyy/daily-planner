@@ -1,0 +1,9 @@
+{# Language: a segmented switch, each language written in itself (so anyone finds theirs).
+   Posts to /language, which comes back to `next`. #}
+<form method="post" action="/language" class="lang-switch" aria-label="{{ _('Language') }}">
+  <input type="hidden" name="next" value="{{ next_path | default(request.url.path) }}">
+  {% for code, name in LANGUAGES.items() %}
+    <button type="submit" name="lang" value="{{ code }}" lang="{{ code }}"
+            aria-pressed="{{ 'true' if page_lang() == code else 'false' }}">{{ name }}</button>
+  {% endfor %}
+</form>

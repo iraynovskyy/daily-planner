@@ -63,7 +63,7 @@ def create_user(
     if len(password) < MIN_PASSWORD_LENGTH:
         raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters.")
     if session.exec(select(User).where(User.username == username)).first():
-        raise ValueError(f"User {username!r} already exists.")
+        raise ValueError("That username is already taken.")
     user = User(username=username, password_hash=hash_password(password))
     session.add(user)
     session.flush()

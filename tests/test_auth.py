@@ -144,7 +144,7 @@ def test_create_user_validation(session):
     with pytest.raises(ValueError, match="at least 12"):
         auth.create_user(session, "shorty", "short")
     auth.create_user(session, "dup", "a long enough password")
-    with pytest.raises(ValueError, match="already exists"):
+    with pytest.raises(ValueError, match="already taken"):
         auth.create_user(session, "dup", "another long password")
 
 
@@ -239,7 +239,7 @@ def test_invite_flow(client, session):
     assert 'action="' + url + '"' in client.get(url).text
     assert "Passwords don&#39;t match." in _join(client, url, repeat="something else!!").text
     assert "at least 12" in _join(client, url, password="short", repeat="short").text
-    assert "already exists" in _join(client, url, username=USERNAME).text
+    assert "already taken" in _join(client, url, username=USERNAME).text
     r = _join(client, url)  # failed attempts didn't use the invite up
     assert r.status_code == 303 and r.headers["location"] == "/"
 

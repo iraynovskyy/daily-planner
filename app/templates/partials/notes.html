@@ -3,8 +3,8 @@
 <details class="notes" id="notes-{{ kind }}" data-kind="{{ kind }}"{% if open %} open{% endif %}>
   <summary>
     <span class="notes-icon" aria-hidden="true">{{ icon }}</span>
-    <span class="notes-title">{{ title }}</span>
-    <span class="notes-count" aria-label="{{ notes | length }} notes">{{ notes | length }}</span>
+    <span class="notes-title">{{ _(title) }}</span>
+    <span class="notes-count" aria-label="{{ _('{n} notes', n=notes | length) }}">{{ notes | length }}</span>
     <span class="notes-chevron" aria-hidden="true"></span>
   </summary>
   <div class="notes-body">
@@ -12,22 +12,22 @@
     <ul data-notes="{{ kind }}">
       {% for n in notes %}
         <li data-note-id="{{ n.id }}">
-          <button type="button" class="drag-handle" title="Drag to reorder or move to another block"
-                  aria-label="Move note: drag, or focus and press ↑/↓ (←/→ to another block)">⠿</button>
-          <span class="notes-text" title="Double-click to edit">{{ n.text }}</span>
-          <button type="button" class="notes-action notes-edit" aria-label="Edit note: {{ n.text }}" title="Edit">✎</button>
-          <button type="button" class="notes-action notes-delete" aria-label="Delete note: {{ n.text }}" title="Delete"
-                  hx-post="/notes/{{ n.id }}/delete" hx-confirm="Delete this note?"
+          <button type="button" class="drag-handle" title="{{ _('Drag to reorder or move to another block') }}"
+                  aria-label="{{ _('Move note: drag, or focus and press ↑/↓ (←/→ to another block)') }}">⠿</button>
+          <span class="notes-text" title="{{ _('Double-click to edit') }}">{{ n.text }}</span>
+          <button type="button" class="notes-action notes-edit" aria-label="{{ _('Edit note: {text}', text=n.text) }}" title="{{ _('Edit') }}">✎</button>
+          <button type="button" class="notes-action notes-delete" aria-label="{{ _('Delete note: {text}', text=n.text) }}" title="{{ _('Delete') }}"
+                  hx-post="/notes/{{ n.id }}/delete" hx-confirm="{{ _('Delete this note?') }}"
                   hx-target="#notes-{{ kind }}" hx-swap="outerHTML">✕</button>
         </li>
       {% else %}
-        <li class="notes-empty">Nothing here yet.</li>
+        <li class="notes-empty">{{ _("Nothing here yet.") }}</li>
       {% endfor %}
     </ul>
     <form class="notes-add" hx-post="/notes" hx-target="#notes-{{ kind }}" hx-swap="outerHTML">
       <input type="hidden" name="kind" value="{{ kind }}">
-      <input name="text" required maxlength="300" placeholder="Add to {{ title }}…" aria-label="New note for {{ title }}">
-      <button type="submit" aria-label="Add note">＋</button>
+      <input name="text" required maxlength="300" placeholder="{{ _('Add to {title}…', title=_(title)) }}" aria-label="{{ _('New note for {title}', title=_(title)) }}">
+      <button type="submit" aria-label="{{ _('Add note') }}">＋</button>
     </form>
   </div>
 </details>
