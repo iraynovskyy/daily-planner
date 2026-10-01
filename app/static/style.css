@@ -107,6 +107,7 @@ table.month tr.optional { opacity: .7; }
 .optional-toggle { display: flex; align-items: center; gap: .4rem; white-space: nowrap; margin: 0; }
 .htmx-request { opacity: .6; transition: opacity .2s; }
 .back-to-month { text-align: center; margin: 0; font-size: .85rem; }
+.back-to-month .zoom-sep { margin: 0 .6rem; color: var(--pico-muted-color); }
 
 /* Month view: habits as rows, days as columns */
 .month-scroll { overflow-x: auto; }
@@ -225,6 +226,11 @@ table.month .future { opacity: .55; }
 .timeline-tip .tip-row { display: flex; align-items: center; gap: .5rem; color: var(--pico-muted-color); }
 .timeline-tip .tip-row b { color: var(--pico-color); font-weight: 700; min-width: 2.6rem; }
 .timeline-tip .tip-row span:last-child { margin-left: auto; padding-left: .5rem; }
+
+/* Today: a centred column (~720px) instead of rows across the whole screen, so a habit's
+   name and its checkboxes stay close; notes stack in it. Phones are narrower anyway. */
+.day-page { max-width: 36rem; margin-inline: auto; }
+.day-page .note-blocks { grid-template-columns: minmax(0, 1fr); gap: .6rem; }
 
 /* Note cards (Own Tips, Ideas) under the checklist: side by side, each collapsible */
 .note-blocks {

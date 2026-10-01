@@ -12,6 +12,8 @@
   <a href="/year/{{ year + 1 }}{{ qs }}" role="button" class="outline">→</a>
 </nav>
 
+<p class="back-to-month"><a href="/month/{{ month_link.strftime('%Y-%m') }}">{{ month_link.strftime("%B %Y") }} →</a></p>
+
 <nav class="year-cats" aria-label="Category">
   <a href="/year/{{ year }}?view=all"{% if not category and not focus %} aria-current="page"{% endif %}>All</a>
   {# Focus is the user's own set: a touch of gold, like golden days. #}

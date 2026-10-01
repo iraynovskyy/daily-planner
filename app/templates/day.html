@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ day.strftime("%a, %d %b %Y") }} · Daily Planner{% endblock %}
 {% block content %}
+{# One readable column on wide screens, like a sheet of paper (see .day-page). #}
+<div class="day-page">
 <nav class="day-nav">
   <a href="/day/{{ prev_day.isoformat() }}" role="button" class="outline">←</a>
   <hgroup>
@@ -32,4 +34,5 @@
 {% endfor %}
 
 {% include "partials/note_blocks.html" %}
+</div>
 {% endblock %}

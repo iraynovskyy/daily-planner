@@ -10,7 +10,8 @@
   <a href="/month/{{ next_month.strftime('%Y-%m') }}" role="button" class="outline">→</a>
 </nav>
 
-<p class="back-to-month"><a href="/year/{{ first.year }}">← {{ first.year }}</a></p>
+{# Up to the year, down to today: the labels say where each arrow goes. #}
+<p class="back-to-month"><a href="/year/{{ first.year }}">← {{ first.year }}</a><span class="zoom-sep" aria-hidden="true">·</span><a href="/today">Today →</a></p>
 
 {% with progress_label="Overall · " %}{% include "partials/progress.html" %}{% endwith %}
 

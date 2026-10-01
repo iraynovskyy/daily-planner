@@ -385,3 +385,14 @@ def test_category_icon_can_be_changed(client):
         '<h3>Basics<span class="cat-icon" aria-hidden="true">🗿</span></h3>'
         in client.get("/day/2026-09-27").text
     )
+
+
+def test_zoom_links_between_year_month_and_day(client):
+    month = client.get("/month/2026-09").text
+    assert '<a href="/year/2026">← 2026</a>' in month and '<a href="/today">Today →</a>' in month
+    this_year = date.today().year
+    year = client.get(f"/year/{this_year}").text
+    assert f'<a href="/month/{date.today():%Y-%m}">{date.today():%B %Y} →</a>' in year
+    assert '<a href="/month/2019-12">December 2019 →</a>' in client.get("/year/2019").text
+    assert '<a href="/month/2099-01">January 2099 →</a>' in client.get("/year/2099").text
+    assert '<a href="/month/2026-09">← September 2026</a>' in client.get("/day/2026-09-27").text
