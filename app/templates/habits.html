@@ -8,6 +8,7 @@
   </select>
 {%- endmacro %}
 {% block content %}
+<div class="narrow-page">
 <h2>{{ _("Habits") }}</h2>
 <p class="habits-intro">{{ _("These appear on every day's checklist, grouped by category. Drag ⠿ to reorder, tap Edit to change one. Deactivating keeps past history; optional habits don't count towards progress.") }}</p>
 
@@ -127,4 +128,5 @@
     if (msg && !confirm(msg)) e.preventDefault();
   });
 </script>
+</div>
 {% endblock %}

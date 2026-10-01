@@ -236,7 +236,12 @@ table.month .future { opacity: .55; }
 .account-pick > summary { font-size: .92rem; cursor: pointer; }
 .account-pick form { margin: .8rem 0 .2rem; }
 .account-ok { color: var(--pico-ins-color); }
-.narrow-page h3 { margin-top: 2rem; font-size: 1.1rem; }
+.narrow-page > h3 { margin-top: 2rem; font-size: 1.1rem; }
+/* Habits in the narrow column: the edit form in two rows (name + times, then unit, category,
+   optional), Save below, so no field gets squeezed. */
+.narrow-page .habit-form { grid-template-columns: 1fr 1fr 1fr; }
+.narrow-page .habit-form label:first-child { grid-column: span 2; }
+.narrow-page .habit-form button { grid-column: 1 / -1; justify-self: start; }
 /* Language: a segmented switch (each language written in itself), like Trend | Daily */
 .lang-switch {
   display: inline-flex; gap: 2px; padding: 3px; margin: 0;
@@ -736,6 +741,8 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
   body:has(.tabbar) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 
   .account-logout { margin-top: 2rem; }
+  .narrow-page .habit-form { grid-template-columns: 1fr 1fr; }
+  .narrow-page .habit-form label:first-child { grid-column: 1 / -1; }
 
   /* Year page: 2 record tiles per row and twelve small calendars instead of the week strip. */
   .year-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
