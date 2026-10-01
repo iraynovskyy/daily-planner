@@ -140,6 +140,12 @@ def year_page(
         {
             "year": year,
             "today": date.today(),
+            # Down to a month: this one in the current year, else the year's last/first month.
+            "month_link": (
+                date.today().replace(day=1)
+                if year == date.today().year
+                else date(year, 12 if year < date.today().year else 1, 1)
+            ),
             "stats": stats,
             "cells": cells,
             "month_labels": month_labels,

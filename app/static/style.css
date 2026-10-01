@@ -107,6 +107,7 @@ table.month tr.optional { opacity: .7; }
 .optional-toggle { display: flex; align-items: center; gap: .4rem; white-space: nowrap; margin: 0; }
 .htmx-request { opacity: .6; transition: opacity .2s; }
 .back-to-month { text-align: center; margin: 0; font-size: .85rem; }
+.back-to-month .zoom-sep { margin: 0 .6rem; color: var(--pico-muted-color); }
 
 /* Month view: habits as rows, days as columns */
 .month-scroll { overflow-x: auto; }
