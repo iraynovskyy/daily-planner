@@ -248,6 +248,15 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       return;
     }
 
+    // Early in a month there may be nothing to draw yet: say why instead of an empty frame.
+    if (!visible.some((s) => s.points.some((p) => lineValue(p) !== null))) {
+      const ticked = visible.some((s) => s.points.some((p) => p.value !== null));
+      el("text", { class: "empty", x: left + iw / 2, y: M.top + ih / 2, "text-anchor": "middle" }).textContent =
+        ticked ? "The trend starts on day 3 — see Daily" : "No ticks yet this month";
+      hover = null;
+      return;
+    }
+
     // Draw in reverse so habit 1 sits on top; the overall line stays underneath.
     const daily = chartMode.get() === "daily";
     const shape = daily ? (r) => r.map(([px, py], k) => (k ? "L" : "M") + px + "," + py).join("") : monotonePath;

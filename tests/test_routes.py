@@ -396,3 +396,18 @@ def test_zoom_links_between_year_month_and_day(client):
     assert '<a href="/month/2019-12">December 2019 →</a>' in client.get("/year/2019").text
     assert '<a href="/month/2099-01">January 2099 →</a>' in client.get("/year/2099").text
     assert '<a href="/month/2026-09">← September 2026</a>' in client.get("/day/2026-09-27").text
+
+
+def test_export_csv(client):
+    client.post("/entries/2/2026-09-26", data={"count": 2})
+    client.post("/entries/1/2026-09-27", data={"count": 1, "golden": "true"})
+    r = client.get("/account/export.csv")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv")
+    assert 'attachment; filename="daily-planner-tester-' in r.headers["content-disposition"]
+    lines = r.content.decode("utf-8-sig").splitlines()
+    assert lines == [
+        "date,category,habit,done,target,golden",
+        "2026-09-26,Base,Food,2,3,",
+        "2026-09-27,Base,Workout,1,1,yes",
+    ]
+    assert r.content.startswith("﻿".encode())  # BOM: Excel reads the names right

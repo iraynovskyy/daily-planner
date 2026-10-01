@@ -1,10 +1,13 @@
+import csv
+import io
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlmodel import Session
 
-from app import auth
+from app import auth, services
 from app.db import get_session
 from app.models import User
 from app.templating import templates
@@ -94,7 +97,14 @@ def logout(request: Request) -> RedirectResponse:
 
 
 def _account_page(
-    request: Request, session: Session, user: int, *, invite_token: str | None = None
+    request: Request,
+    session: Session,
+    user: int,
+    *,
+    invite_token: str | None = None,
+    password_error: str | None = None,
+    password_changed: bool = False,
+    status_code: int = 200,
 ) -> Response:
     path = request.app.url_path_for("join_form", token=invite_token) if invite_token else None
     return templates.TemplateResponse(
@@ -106,7 +116,11 @@ def _account_page(
             "invite_path": path,
             "invite_url": str(request.base_url).rstrip("/") + path if path else None,
             "invite_days": auth.INVITE_DAYS,
+            "password_error": password_error,
+            "password_changed": password_changed,
+            "min_password": auth.MIN_PASSWORD_LENGTH,
         },
+        status_code=status_code,
     )
 
 
@@ -178,3 +192,50 @@ def join(
             request.session["user_id"] = user.id
             return RedirectResponse("/", status_code=303)
     return _join_page(request, session, token, error=error, username=username, status_code=400)
+
+
+@router.post("/account/password", response_class=HTMLResponse)
+def change_password(
+    request: Request,
+    session: SessionDep,
+    user: UserDep,
+    current_password: Annotated[str, Form(max_length=200)],
+    new_password: Annotated[str, Form(max_length=200)],
+    new_password_repeat: Annotated[str, Form(max_length=200)],
+) -> Response:
+    """Needs the current password; wrong guesses count like failed logins (rate limited)."""
+    ip, username = _client_ip(request), session.get(User, user).username
+    error = None
+    if wait := auth.login_limiter.retry_after(ip, username):
+        error = f"Too many wrong passwords. Try again in {wait // 60 + 1} min."
+    elif new_password != new_password_repeat:
+        error = "The new passwords don't match."
+    else:
+        try:
+            auth.change_password(session, user, current_password, new_password)
+        except ValueError as e:
+            error = str(e)
+            if "current password" in error:
+                auth.login_limiter.failed(ip, username)
+    if error:
+        return _account_page(request, session, user, password_error=error, status_code=400)
+    auth.login_limiter.succeeded(ip, username)
+    request.session.clear()  # fresh session after a credential change
+    request.session["user_id"] = user
+    return _account_page(request, session, user, password_changed=True)
+
+
+@router.get("/account/export.csv")
+def export_csv(session: SessionDep, user: UserDep) -> Response:
+    """All ticked habit-days as a CSV (with a BOM so Excel reads non-English names right)."""
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["date", "category", "habit", "done", "target", "golden"])
+    writer.writerows(services.export_rows(session, user))
+    name = session.get(User, user).username
+    filename = f"daily-planner-{name}-{date.today()}.csv"
+    return Response(
+        "\ufeff" + out.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

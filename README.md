@@ -39,6 +39,7 @@ own). Add it to the home screen and it opens full screen on today's checklist, l
 - **Light / dark theme** switch, remembered per browser
 - **Phone layout**: bottom tab bar, compact month grid, touch-friendly charts; **installable** on the home screen, with Today and Year shortcuts on the icon
 - **Several users**, each with their own data; invite a friend with a one-time link
+- **Account**: change your password, and download all your ticks as a CSV (opens in Excel / Google Sheets)
 
 ## Tech stack
 | Layer | Choice |
@@ -158,7 +159,7 @@ app/
   services.py      business logic, no web code
   routes/pages.py  full pages: / (month grid), /day/…, /year/…, /habits; /today and /year shortcuts
   routes/api.py    form / HTMX endpoints that return HTML fragments
-  routes/auth.py   /login, /logout, /account (invite links), /join/… (sign up with an invite)
+  routes/auth.py   /login, /logout, /account (invites, password, CSV export), /join/… (sign up with an invite)
   routes/health.py /health: liveness + database check
   routes/pwa.py    /manifest.webmanifest: home-screen install, icon shortcuts
   templates/       Jinja HTML; partials/ are the fragments HTMX swaps in

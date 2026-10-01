@@ -94,6 +94,14 @@ document.querySelectorAll(".category .timeline.with-rings").forEach((section) =>
     const all = required
       .map((h) => count(h, started ? days : past))
       .reduce((s, c) => ({ done: s.done + c.done, target: s.target + c.target }), { done: 0, target: 0 });
+    if (!all.target && !focusDay) {
+      // Nothing counted yet this month (e.g. the 1st, before any tick): no rings of "—".
+      const empty = document.createElement("p");
+      empty.className = "rings-empty";
+      empty.textContent = "The rings fill in as you tick.";
+      box.replaceChildren(caption, empty);
+      return;
+    }
     const list = document.createElement("ul");
     list.className = "ring-list";
     list.append(

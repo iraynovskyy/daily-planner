@@ -229,7 +229,14 @@ table.month .future { opacity: .55; }
 
 /* Today: a centred column (~720px) instead of rows across the whole screen, so a habit's
    name and its checkboxes stay close; notes stack in it. Phones are narrower anyway. */
-.day-page { max-width: 36rem; margin-inline: auto; }
+.day-page, .narrow-page { max-width: 36rem; margin-inline: auto; }
+/* Account: buttons sized to their text, the rarely used password form folded away */
+.narrow-page .account-button { width: auto; padding-inline: 1.4rem; }
+.account-pick { margin: .2rem 0 .5rem; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); padding: .5rem .9rem; }
+.account-pick > summary { font-size: .92rem; cursor: pointer; }
+.account-pick form { margin: .8rem 0 .2rem; }
+.account-ok { color: var(--pico-ins-color); }
+.narrow-page h3 { margin-top: 2rem; font-size: 1.1rem; }
 .day-page .note-blocks { grid-template-columns: minmax(0, 1fr); gap: .6rem; }
 
 /* Note cards (Own Tips, Ideas) under the checklist: side by side, each collapsible */

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Account · Daily Planner{% endblock %}
 {% block content %}
+<div class="narrow-page">
 <h2>Account</h2>
 <p>Logged in as <strong>{{ user.username }}</strong>. Your categories, habits, checks and notes are yours only.</p>
 
@@ -29,7 +30,7 @@
 {% endif %}
 
 <form method="post" action="/account/invites">
-  <button type="submit"{% if invite_url %} class="secondary outline"{% endif %}>Create invite link</button>
+  <button type="submit" class="account-button{% if invite_url %} secondary outline{% endif %}">Create invite link</button>
 </form>
 
 {% if invites %}
@@ -46,8 +47,30 @@
 </ul>
 {% endif %}
 
+<h3>Password</h3>
+{% if password_changed %}<p class="account-ok" role="status">Password changed.</p>{% endif %}
+<details class="account-pick"{% if password_error %} open{% endif %}>
+  <summary>Change password</summary>
+  {% if password_error %}<p class="login-error" role="alert">{{ password_error }}</p>{% endif %}
+  <form method="post" action="/account/password">
+    <label>Current password
+      <input type="password" name="current_password" autocomplete="current-password" required maxlength="200"></label>
+    <label>New password <small>(at least {{ min_password }} characters)</small>
+      <input type="password" name="new_password" autocomplete="new-password" required minlength="{{ min_password }}" maxlength="200"></label>
+    <label>Repeat new password
+      <input type="password" name="new_password_repeat" autocomplete="new-password" required minlength="{{ min_password }}" maxlength="200"></label>
+    <button type="submit" class="account-button">Change password</button>
+  </form>
+</details>
+
+<h3>Your data</h3>
+<p>Every ticked habit by day — date, category, habit, ticks done of the target, golden — in a CSV file
+  that opens in Excel or Google Sheets.</p>
+<a href="/account/export.csv" role="button" class="secondary outline account-button" download>Download my data (CSV)</a>
+
 {# The header's Log out is hidden on phones (tab bar instead), so it lives here there. #}
 <form method="post" action="/logout" class="mobile-only account-logout">
   <button type="submit" class="secondary outline">Log out</button>
 </form>
+</div>
 {% endblock %}

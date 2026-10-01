@@ -83,6 +83,20 @@ def set_password(session: Session, username: str, password: str) -> None:
     session.commit()
 
 
+def change_password(session: Session, user_id: int, current: str, new: str) -> None:
+    """New password for a logged-in user who knows the current one. ValueError if not."""
+    user = session.get(User, user_id)
+    if user is None or not verify_password(user.password_hash, current):
+        raise ValueError("The current password isn't right.")
+    if len(new) < MIN_PASSWORD_LENGTH:
+        raise ValueError(f"The new password must be at least {MIN_PASSWORD_LENGTH} characters.")
+    if new == current:
+        raise ValueError("The new password is the same as the current one.")
+    user.password_hash = hash_password(new)
+    session.add(user)
+    session.commit()
+
+
 def has_users(session: Session) -> bool:
     return session.exec(select(User.id)).first() is not None
 
