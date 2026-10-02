@@ -43,7 +43,7 @@
     input.className = "notes-text-input";
     input.value = span.textContent;
     input.maxLength = 300;
-    input.setAttribute("aria-label", "Edit note");
+    input.setAttribute("aria-label", t("Edit note"));
     span.replaceWith(input);
     input.focus();
     input.select();

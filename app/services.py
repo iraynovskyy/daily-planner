@@ -423,6 +423,27 @@ def year_stats(
     return YearStats(days, stats)
 
 
+def export_rows(session: Session, user_id: int) -> list[tuple]:
+    """Every ticked habit-day of the user, oldest first, for the CSV download:
+    (date, category, habit, done, target, golden)."""
+    habits = {h.id: h for h in list_habits(session, user_id)}
+    names = {c.id: c.name for c in list_categories(session, user_id)}
+    order = {hid: k for k, hid in enumerate(habits)}
+    entries = [e for e in _entries(session, user_id, date.min, date.max) if e.count_done > 0]
+    entries.sort(key=lambda e: (e.date, order[e.habit_id]))
+    return [
+        (
+            e.date.isoformat(),
+            names[habits[e.habit_id].category_id],
+            habits[e.habit_id].name,
+            e.count_done,
+            habits[e.habit_id].target_count,
+            "yes" if e.golden else "",
+        )
+        for e in entries
+    ]
+
+
 def progress(items: list[DayItem]) -> int:
     """Completion % of required habits; optional ones are ignored."""
     items = [i for i in items if not i.habit.optional]

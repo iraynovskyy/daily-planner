@@ -144,7 +144,7 @@ def test_create_user_validation(session):
     with pytest.raises(ValueError, match="at least 12"):
         auth.create_user(session, "shorty", "short")
     auth.create_user(session, "dup", "a long enough password")
-    with pytest.raises(ValueError, match="already exists"):
+    with pytest.raises(ValueError, match="already taken"):
         auth.create_user(session, "dup", "another long password")
 
 
@@ -239,7 +239,7 @@ def test_invite_flow(client, session):
     assert 'action="' + url + '"' in client.get(url).text
     assert "Passwords don&#39;t match." in _join(client, url, repeat="something else!!").text
     assert "at least 12" in _join(client, url, password="short", repeat="short").text
-    assert "already exists" in _join(client, url, username=USERNAME).text
+    assert "already taken" in _join(client, url, username=USERNAME).text
     r = _join(client, url)  # failed attempts didn't use the invite up
     assert r.status_code == 303 and r.headers["location"] == "/"
 
@@ -275,3 +275,38 @@ def test_invite_tokens_are_stored_hashed(client, session):
     token = _new_invite(client).removeprefix("/join/")
     assert len(token) >= 32
     assert token not in session.exec(select(Invite)).one().token_hash
+
+
+# --- changing the password ------------------------------------------------------------------------
+
+NEW_PASSWORD = "a brand new password"
+
+
+def _change(client, current=PASSWORD, new=NEW_PASSWORD, repeat=None):
+    data = {"current_password": current, "new_password": new, "new_password_repeat": repeat or new}
+    return client.post("/account/password", data=data)
+
+
+def test_change_password(client):
+    assert "Change password" in client.get("/account").text
+    r = _change(client, current="not my password!")
+    assert (
+        r.status_code == 400
+        and "current password isn" in r.text
+        and '<details class="account-pick" open>' in r.text
+    )
+    assert "match" in _change(client, repeat="something else entirely").text
+    assert "at least 12" in _change(client, new="short", repeat="short").text
+    assert "same as the current" in _change(client, new=PASSWORD).text
+    r = _change(client)
+    assert r.status_code == 200 and "Password changed." in r.text
+    client.post("/logout")
+    assert login(client).status_code == 401  # the old one no longer works
+    assert login(client, password=NEW_PASSWORD).status_code == 303
+
+
+def test_change_password_is_rate_limited(client):
+    for _ in range(5):
+        _change(client, current="wrong guess number")
+    r = _change(client)  # even the right one, once blocked
+    assert r.status_code == 400 and "Too many wrong passwords" in r.text

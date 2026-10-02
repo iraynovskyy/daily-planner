@@ -77,6 +77,9 @@ const chartMode = {
   },
 };
 
+// Dates in the tooltip follow the page's language (<html lang>).
+const locale = document.documentElement.lang === "uk" ? "uk-UA" : undefined;
+
 document.querySelectorAll(".category .timeline").forEach((section) => {
   const root = section.closest(".category");
   const svg = section.querySelector(".timeline-svg");
@@ -87,10 +90,10 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
   const modes = document.createElement("div");
   modes.className = "chart-mode";
   modes.setAttribute("role", "radiogroup");
-  modes.setAttribute("aria-label", "Chart style");
+  modes.setAttribute("aria-label", t("Chart style"));
   const modeButtons = [
-    ["trend", "Trend", "7-day average: the direction you're heading"],
-    ["daily", "Daily", "Each day's exact value"],
+    ["trend", t("Trend"), t("7-day average: the direction you're heading")],
+    ["daily", t("Daily"), t("Each day's exact value")],
   ].map(([mode, label, title]) => {
     const b = document.createElement("button");
     b.type = "button";
@@ -199,12 +202,13 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
     const sync = () => {
       for (const b of chips) b.setAttribute("aria-pressed", String(!hidden.has(b.dataset.key)));
       const showAll = [overall, ...habits].some((s) => hidden.has(s.key));
-      toggle.textContent = showAll ? "Show all" : "Hide all";
-      toggle.title = showAll ? "Show every habit's line" : "Keep only the overall line";
+      toggle.dataset.action = showAll ? "show" : "hide"; // the label is translated, so not compared
+      toggle.textContent = showAll ? t("Show all") : t("Hide all");
+      toggle.title = showAll ? t("Show every habit's line") : t("Keep only the overall line");
       render();
     };
     toggle.addEventListener("click", () => {
-      if (toggle.textContent === "Show all") hidden.clear();
+      if (toggle.dataset.action === "show") hidden.clear();
       else habits.forEach((h) => hidden.add(h.key));
       sync();
     });
@@ -243,7 +247,16 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
     const lastIdx = days.reduce((last, d, i) => (d.day <= today ? i : last), -1);
     if (lastIdx < 0) {
       el("text", { class: "empty", x: left + iw / 2, y: M.top + ih / 2, "text-anchor": "middle" })
-        .textContent = "No progress to show yet";
+        .textContent = t("No progress to show yet");
+      hover = null;
+      return;
+    }
+
+    // Early in a month there may be nothing to draw yet: say why instead of an empty frame.
+    if (!visible.some((s) => s.points.some((p) => lineValue(p) !== null))) {
+      const ticked = visible.some((s) => s.points.some((p) => p.value !== null));
+      el("text", { class: "empty", x: left + iw / 2, y: M.top + ih / 2, "text-anchor": "middle" }).textContent =
+        ticked ? t("The trend starts on day 3 — see Daily") : t("No ticks yet this month");
       hover = null;
       return;
     }
@@ -319,8 +332,8 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
     date.className = "tip-date";
     const daily = chartMode.get() === "daily";
     date.textContent =
-      days[i].date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) +
-      (daily ? "" : " · 7-day average");
+      days[i].date.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }) +
+      (daily ? "" : " · " + t("7-day average"));
     tip.replaceChildren(date);
     for (const s of hover.visible) {
       const p = s.points[i];
@@ -337,8 +350,8 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       const count = document.createElement("span");
       // The bold number is what the line shows; the other view's number rides along.
       count.textContent = daily
-        ? `${p.done}/${p.target}` + (p.avg === null ? "" : ` · week ${Math.round(p.avg)}%`)
-        : p.value === null ? "—" : `that day ${p.value}% · ${p.done}/${p.target}`;
+        ? `${p.done}/${p.target}` + (p.avg === null ? "" : " · " + t("week {pct}%", { pct: Math.round(p.avg) }))
+        : p.value === null ? "—" : t("that day {pct}% · {done}/{target}", { pct: p.value, done: p.done, target: p.target });
       row.append(key, value, name, count);
       tip.appendChild(row);
     }

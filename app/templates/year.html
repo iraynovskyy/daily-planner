@@ -7,17 +7,17 @@
   <a href="/year/{{ year - 1 }}{{ qs }}" role="button" class="outline">←</a>
   <hgroup>
     <h2>{{ year }}</h2>
-    <p>at a glance</p>
+    <p>{{ _("at a glance") }}</p>
   </hgroup>
   <a href="/year/{{ year + 1 }}{{ qs }}" role="button" class="outline">→</a>
 </nav>
 
-<p class="back-to-month"><a href="/month/{{ month_link.strftime('%Y-%m') }}">{{ month_link.strftime("%B %Y") }} →</a></p>
+<p class="back-to-month"><a href="/month/{{ month_link.strftime('%Y-%m') }}">{{ fmt_date(month_link, "month_year") }} →</a></p>
 
-<nav class="year-cats" aria-label="Category">
-  <a href="/year/{{ year }}?view=all"{% if not category and not focus %} aria-current="page"{% endif %}>All</a>
+<nav class="year-cats" aria-label="{{ _('Category') }}">
+  <a href="/year/{{ year }}?view=all"{% if not category and not focus %} aria-current="page"{% endif %}>{{ _("All") }}</a>
   {# Focus is the user's own set: a touch of gold, like golden days. #}
-  <a href="/year/{{ year }}?focus=1" class="focus-chip"{% if focus %} aria-current="page"{% endif %} title="Only the habits you picked">Focus</a>
+  <a href="/year/{{ year }}?focus=1" class="focus-chip"{% if focus %} aria-current="page"{% endif %} title="{{ _('Only the habits you picked') }}">{{ _("Focus") }}</a>
   {% for c in categories %}
     <a href="/year/{{ year }}?category={{ c.id }}"{% if category == c.id %} aria-current="page"{% endif %}>{{ c.name }}</a>
   {% endfor %}
@@ -27,17 +27,17 @@
    picked it sits at the bottom of the page, closed. #}
 {% macro focus_picker(bottom=False) -%}
 <details class="focus-pick{% if bottom %} bottom{% endif %}"{% if not focus_habits %} open{% endif %}>
-  <summary>Choose habits · {{ focus_habits | length }} picked</summary>
+  <summary>{{ _("Choose habits · {n} picked", n=focus_habits | length) }}</summary>
   <form method="post" action="/habits/focus">
     <input type="hidden" name="year" value="{{ year }}">
-    <p class="year-note">Pick the habits you're working on now, one or many, to follow just them here.</p>
+    <p class="year-note">{{ _("Pick the habits you're working on now, one or many, to follow just them here.") }}</p>
     <div class="focus-options">
       {% for h in all_habits %}
         <label><input type="checkbox" name="ids" value="{{ h.id }}"{% if h.focus %} checked{% endif %}>
-          <span class="habit-title">{{ h.name }}</span>{% if h.optional %} <span class="optional-tag">optional</span>{% endif %}</label>
+          <span class="habit-title">{{ h.name }}</span>{% if h.optional %} <span class="optional-tag">{{ _("optional") }}</span>{% endif %}</label>
       {% endfor %}
     </div>
-    <button type="submit">Save</button>
+    <button type="submit">{{ _("Save") }}</button>
   </form>
 </details>
 {%- endmacro %}
@@ -47,7 +47,7 @@
   {%- if d is none -%}<span class="yc pad"></span>
   {%- elif d.day > today -%}<span class="yc ahead"></span>
   {%- else -%}
-    {%- set label = d.day.strftime("%a ") ~ d.day.day ~ d.day.strftime(" %b") ~ (" · " ~ d.pct ~ "% done" if d.pct is not none else (" · nothing ticked yet" if d.day == today else " · not tracked")) ~ (" · ⭐ " ~ d.golden ~ " golden" if d.golden else "") -%}
+    {%- set label = fmt_date(d.day, "day_month") ~ " · " ~ (_("{n}% done", n=d.pct) if d.pct is not none else (_("nothing ticked yet") if d.day == today else _("not tracked"))) ~ (" · ⭐ " ~ _("{n} golden", n=d.golden) if d.golden else "") -%}
     <a class="yc{% if d.pct is none %} untracked{% endif %}{% if d.golden %} gold{% endif %}{% if d.day == today %} today{% endif %}"
        {%- if d.pct is not none %} data-l="{{ d.level }}"{% endif %} href="/day/{{ d.day.isoformat() }}" title="{{ label }}" aria-label="{{ label }}"></a>
   {%- endif -%}
@@ -57,48 +57,48 @@
 {% if focus and not focus_habits %}{{ focus_picker() }}{% endif %}
 
 {% if focus and not focus_habits %}
-<p class="year-note focus-empty">No habits in Focus yet. Pick a few above and their year shows up here.</p>
+<p class="year-note focus-empty">{{ _("No habits in Focus yet. Pick a few above and their year shows up here.") }}</p>
 {% else %}
 {% if stats.tracked %}
 {# Quiet facts about the process, no badges: how often everything got done, and the average. #}
 <div class="year-tiles">
   <div class="year-tile">
-    <span class="k">Perfect days</span><span class="v">{{ stats.perfect_days }}</span><span class="s">every habit done</span>
+    <span class="k">{{ _("Perfect days") }}</span><span class="v">{{ stats.perfect_days }}</span><span class="s">{{ _("every habit done") }}</span>
   </div>
   <div class="year-tile">
-    <span class="k">Average</span><span class="v">{{ stats.average }}%</span><span class="s">over {{ stats.tracked | length }} tracked days</span>
+    <span class="k">{{ _("Average") }}</span><span class="v">{{ stats.average }}%</span><span class="s">{{ _("over {n} tracked days", n=stats.tracked | length) }}</span>
   </div>
 </div>
 {% endif %}
 
-<section class="year-grid" aria-label="Every day of {{ year }}">
+<section class="year-grid" aria-label="{{ _('Every day of {year}', year=year) }}">
   {# Computer: weeks as columns, Monday on top. #}
   <div class="year-scroll">
     <div class="year-strip" style="--weeks: {{ (cells | length / 7) | round(0, 'ceil') | int }}">
       <div class="ys-months" aria-hidden="true">
-        {% for col, name in month_labels %}<span style="grid-column: {{ col }}">{{ name }}</span>{% endfor %}
+        {% for col, m in month_labels %}<span style="grid-column: {{ col }}">{{ month_name(m, short=True) }}</span>{% endfor %}
       </div>
-      <div class="ys-wd" aria-hidden="true"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div>
+      <div class="ys-wd" aria-hidden="true"><span>{{ _("Mon") }}</span><span></span><span>{{ _("Wed") }}</span><span></span><span>{{ _("Fri") }}</span><span></span><span></span></div>
       <div class="ys-weeks">{% for d in cells %}{{ yc(d) }}{% endfor %}</div>
     </div>
   </div>
   {# Phone: twelve small calendars. #}
   <div class="year-months">
-    {% for name, days in months %}
-      <div class="ym"><span class="ym-name">{{ name }}</span><div class="ym-days">{% for d in days %}{{ yc(d) }}{% endfor %}</div></div>
+    {% for m, days in months %}
+      <div class="ym"><span class="ym-name">{{ month_name(m, short=True) }}</span><div class="ym-days">{% for d in days %}{{ yc(d) }}{% endfor %}</div></div>
     {% endfor %}
   </div>
 
-  <ul class="year-legend" aria-label="What the colours mean">
+  <ul class="year-legend" aria-label="{{ _('What the colours mean') }}">
     <li><i class="yc" data-l="0"></i>0%</li>
     <li><i class="yc" data-l="1"></i>1–39%</li>
     <li><i class="yc" data-l="2"></i>40–69%</li>
     <li><i class="yc" data-l="3"></i>70–99%</li>
     <li><i class="yc" data-l="4"></i>100%</li>
-    <li><i class="yc gold" data-l="3"></i>golden day</li>
-    <li><i class="yc untracked"></i>not tracked</li>
+    <li><i class="yc gold" data-l="3"></i>{{ _("golden day") }}</li>
+    <li><i class="yc untracked"></i>{{ _("not tracked") }}</li>
   </ul>
-  <p class="year-note">A day's shade is how much of it you did, like the “Done” row of a month. Tap a day to open it.</p>
+  <p class="year-note">{{ _("A day's shade is how much of it you did, like the “Done” row of a month. Tap a day to open it.") }}</p>
 </section>
 
 {% if stats.habits %}
@@ -106,12 +106,12 @@
    the top 3 show and the rest open with "Show all" (remembered per browser). #}
 {% set collapsible = stats.habits | length > 4 %}
 <section class="year-habits-box">
-  <h3>Most consistent habits</h3>
+  <h3>{{ _("Most consistent habits") }}</h3>
   <ol class="year-habits{% if collapsible %} collapsible{% endif %}" id="year-habits">
     {% for h in stats.habits %}
     {% set marked = h.habit.focus and not focus %}
-    <li class="{{ 'more' if loop.index > 3 }}{{ ' in-focus' if marked }}"{% if marked %} title="In Focus"{% endif %}>
-      <span class="habit-title">{{ h.habit.name }}{% if h.habit.optional %} <span class="optional-tag">optional</span>{% endif %}
+    <li class="{{ 'more' if loop.index > 3 }}{{ ' in-focus' if marked }}"{% if marked %} title="{{ _('In Focus') }}"{% endif %}>
+      <span class="habit-title">{{ h.habit.name }}{% if h.habit.optional %} <span class="optional-tag">{{ _("optional") }}</span>{% endif %}
         {%- if not category %} <span class="cat">{{ category_names[h.habit.category_id] }}</span>{% endif %}</span>
       <b>{{ h.pct }}%</b>
       <span class="bar"><i data-l="{{ h.level }}" style="width: {{ h.pct }}%"></i></span>
@@ -120,7 +120,7 @@
   </ol>
   {% if collapsible %}
   <button type="button" class="year-habits-more outline secondary" aria-controls="year-habits" aria-expanded="false"
-          data-all="Show all {{ stats.habits | length }} habits" data-top="Show top 3">Show all {{ stats.habits | length }} habits</button>
+          data-all="{{ _('Show all {n} habits', n=stats.habits | length) }}" data-top="{{ _('Show top 3') }}">{{ _("Show all {n} habits", n=stats.habits | length) }}</button>
   <script>
     (() => {
       const list = document.getElementById("year-habits");
@@ -143,7 +143,7 @@
   {% endif %}
 </section>
 {% else %}
-<p class="year-note">Nothing tracked in {{ year }} yet.</p>
+<p class="year-note">{{ _("Nothing tracked in {year} yet.", year=year) }}</p>
 {% endif %}
 {% if focus and focus_habits %}{{ focus_picker(bottom=True) }}{% endif %}
 {% endif %}

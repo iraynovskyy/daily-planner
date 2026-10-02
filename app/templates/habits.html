@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Habits · Daily Planner{% endblock %}
+{% block title %}{{ _("Habits") }} · Daily Planner{% endblock %}
 {% macro category_select(selected) -%}
-  <select name="category_id" aria-label="Category" required>
+  <select name="category_id" aria-label="{{ _('Category') }}" required>
     {% for c in categories %}
       <option value="{{ c.id }}"{% if c.id == selected %} selected{% endif %}>{{ c.name }}</option>
     {% endfor %}
   </select>
 {%- endmacro %}
 {% block content %}
-<h2>Habits</h2>
-<p class="habits-intro">These appear on every day's checklist, grouped by category. Drag ⠿ to reorder, tap Edit to change one.
-  Deactivating keeps past history; <em>optional</em> habits don't count towards progress.</p>
+<div class="narrow-page">
+<h2>{{ _("Habits") }}</h2>
+<p class="habits-intro">{{ _("These appear on every day's checklist, grouped by category. Drag ⠿ to reorder, tap Edit to change one. Deactivating keeps past history; optional habits don't count towards progress.") }}</p>
 
 {# Read first, edit on demand: each habit and category is one quiet line, and "Edit" opens its
    fields and buttons right below it (the toggle script is at the end of this page). #}
@@ -18,27 +18,27 @@
 <section class="category">
   <div class="cat-line">
     <h3>{{ category.name }}{% if category.icon %}<span class="cat-icon" aria-hidden="true">{{ category.icon }}</span>{% endif %}</h3>
-    <button type="button" class="edit-toggle" data-edit="cat-{{ category.id }}" aria-expanded="false" aria-controls="cat-{{ category.id }}">Edit</button>
+    <button type="button" class="edit-toggle" data-edit="cat-{{ category.id }}" aria-expanded="false" aria-controls="cat-{{ category.id }}">{{ _("Edit") }}</button>
   </div>
   <div class="editor category-tools" id="cat-{{ category.id }}" hidden>
     <form method="post" action="/categories/{{ category.id }}" role="group" class="category-rename">
       <input type="hidden" name="with_icon" value="true">
-      <input name="icon" value="{{ category.icon or '' }}" maxlength="10" placeholder="🙂" aria-label="Icon (an emoji)" title="Icon: any emoji, or empty for none" class="cat-icon-input">
-      <input name="name" value="{{ category.name }}" required maxlength="50" aria-label="Category name">
-      <button type="submit" class="secondary outline">Save</button>
+      <input name="icon" value="{{ category.icon or '' }}" maxlength="10" placeholder="🙂" aria-label="{{ _('Icon (an emoji)') }}" title="{{ _('Icon: any emoji, or empty for none') }}" class="cat-icon-input">
+      <input name="name" value="{{ category.name }}" required maxlength="50" aria-label="{{ _('Category name') }}">
+      <button type="submit" class="secondary outline">{{ _("Save") }}</button>
     </form>
     {% if categories | length > 1 %}
     {# Habits are never deleted with their category: they move, history included. #}
     <form method="post" action="/categories/{{ category.id }}/delete" role="group" class="category-delete"
-          data-confirm="Delete the “{{ category.name }}” category?{% if habits %} Its {{ habits | length }} habit(s) and their history will move to the chosen category.{% endif %}">
+          data-confirm="{{ _('Delete the “{name}” category?', name=category.name) }}{% if habits %} {{ _('Its {n} habit(s) and their history will move to the chosen category.', n=habits | length) }}{% endif %}">
       {% if habits %}
-      <select name="move_to" aria-label="Move its habits to" required>
+      <select name="move_to" aria-label="{{ _('Move its habits to') }}" required>
         {% for c in categories if c.id != category.id %}
-          <option value="{{ c.id }}">Move habits to {{ c.name }}</option>
+          <option value="{{ c.id }}">{{ _("Move habits to {name}", name=c.name) }}</option>
         {% endfor %}
       </select>
       {% endif %}
-      <button type="submit" class="secondary outline">Delete</button>
+      <button type="submit" class="secondary outline">{{ _("Delete") }}</button>
     </form>
     {% endif %}
   </div>
@@ -47,37 +47,37 @@
   {% for h in habits %}
   <article class="habit-item{% if not h.active %} inactive{% endif %}" data-habit-id="{{ h.id }}"{% if h.optional %} data-optional{% endif %}>
     <div class="habit-line">
-      <button type="button" class="drag-handle" aria-label="Move {{ h.name }}: drag, or focus and press ↑/↓" title="Drag to reorder">⠿</button>
+      <button type="button" class="drag-handle" aria-label="{{ _('Move {name}: drag, or focus and press ↑/↓', name=h.name) }}" title="{{ _('Drag to reorder') }}">⠿</button>
       <span class="habit-title">{{ h.name }}</span>
-      {%- if h.unit or h.target_count > 1 %} <small class="habit-unit">· {{ h.target_count if h.target_count > 1 else "" }} {{ h.unit or ("times" if h.target_count > 1 else "") }}</small>{% endif %}
-      {% if h.optional %}<span class="optional-tag">optional</span>{% endif %}
-      {% if not h.active %}<span class="optional-tag">inactive</span>{% endif %}
-      <button type="button" class="edit-toggle" data-edit="habit-{{ h.id }}" aria-expanded="false" aria-controls="habit-{{ h.id }}">Edit</button>
+      {%- if h.unit or h.target_count > 1 %} <small class="habit-unit">· {{ h.target_count if h.target_count > 1 else "" }} {{ h.unit or (_("times") if h.target_count > 1 else "") }}</small>{% endif %}
+      {% if h.optional %}<span class="optional-tag">{{ _("optional") }}</span>{% endif %}
+      {% if not h.active %}<span class="optional-tag">{{ _("inactive") }}</span>{% endif %}
+      <button type="button" class="edit-toggle" data-edit="habit-{{ h.id }}" aria-expanded="false" aria-controls="habit-{{ h.id }}">{{ _("Edit") }}</button>
     </div>
     <div class="editor" id="habit-{{ h.id }}" hidden>
       <form method="post" action="/habits/{{ h.id }}" class="habit-form">
-        <label>Name <input name="name" value="{{ h.name }}" required maxlength="100"></label>
-        <label>Times a day <input name="target_count" type="number" min="1" max="20" value="{{ h.target_count }}"></label>
-        <label>Unit <input name="unit" value="{{ h.unit or '' }}" maxlength="20" placeholder="e.g. min"></label>
-        <label>Category {{ category_select(h.category_id) }}</label>
-        <label class="optional-toggle"><input type="checkbox" name="optional" value="true" {% if h.optional %}checked{% endif %}> Optional</label>
-        <button type="submit">Save</button>
+        <label>{{ _("Name") }} <input name="name" value="{{ h.name }}" required maxlength="100"></label>
+        <label>{{ _("Times a day") }} <input name="target_count" type="number" min="1" max="20" value="{{ h.target_count }}"></label>
+        <label>{{ _("Unit") }} <input name="unit" value="{{ h.unit or '' }}" maxlength="20" placeholder="{{ _('e.g. min') }}"></label>
+        <label>{{ _("Category") }} {{ category_select(h.category_id) }}</label>
+        <label class="optional-toggle"><input type="checkbox" name="optional" value="true" {% if h.optional %}checked{% endif %}> {{ _("Optional") }}</label>
+        <button type="submit">{{ _("Save") }}</button>
       </form>
       <div class="habit-actions">
         <form method="post" action="/habits/{{ h.id }}/active">
           <input type="hidden" name="active" value="{{ 'false' if h.active else 'true' }}">
-          <button class="secondary outline">{{ 'Deactivate' if h.active else 'Activate' }}</button>
+          <button class="secondary outline">{{ _('Deactivate') if h.active else _('Activate') }}</button>
         </form>
         <form method="post" action="/habits/{{ h.id }}/delete"
-              data-confirm="Delete “{{ h.name }}” and all its history for good? (Deactivate hides it but keeps the history.)">
-          <button class="secondary outline">Delete</button>
+              data-confirm="{{ _('Delete “{name}” and all its history for good? (Deactivate hides it but keeps the history.)', name=h.name) }}">
+          <button class="secondary outline">{{ _("Delete") }}</button>
         </form>
-        <button type="button" class="edit-toggle cancel" data-edit="habit-{{ h.id }}">Cancel</button>
+        <button type="button" class="edit-toggle cancel" data-edit="habit-{{ h.id }}">{{ _("Cancel") }}</button>
       </div>
     </div>
   </article>
   {% else %}
-  <p><small>No habits in this category yet.</small></p>
+  <p><small>{{ _("No habits in this category yet.") }}</small></p>
   {% endfor %}
   </div>
 </section>
@@ -85,24 +85,24 @@
 
 <div class="add-lines">
   <div class="add-line">
-    <button type="button" class="edit-toggle add" data-edit="add-habit" aria-expanded="false" aria-controls="add-habit">+ Add habit</button>
+    <button type="button" class="edit-toggle add" data-edit="add-habit" aria-expanded="false" aria-controls="add-habit">+ {{ _("Add habit") }}</button>
     <div class="editor" id="add-habit" hidden>
       <form method="post" action="/habits" class="habit-form">
-        <label>Name <input name="name" required maxlength="100" placeholder="e.g. Read 20 pages"></label>
-        <label>Times a day <input name="target_count" type="number" min="1" max="20" value="1"></label>
-        <label>Unit <input name="unit" maxlength="20" placeholder="optional"></label>
-        <label>Category {{ category_select(none) }}</label>
-        <label class="optional-toggle"><input type="checkbox" name="optional" value="true"> Optional</label>
-        <button type="submit">Add</button>
+        <label>{{ _("Name") }} <input name="name" required maxlength="100" placeholder="{{ _('e.g. Read 20 pages') }}"></label>
+        <label>{{ _("Times a day") }} <input name="target_count" type="number" min="1" max="20" value="1"></label>
+        <label>{{ _("Unit") }} <input name="unit" maxlength="20" placeholder="{{ _('optional') }}"></label>
+        <label>{{ _("Category") }} {{ category_select(none) }}</label>
+        <label class="optional-toggle"><input type="checkbox" name="optional" value="true"> {{ _("Optional") }}</label>
+        <button type="submit">{{ _("Add") }}</button>
       </form>
     </div>
   </div>
   <div class="add-line">
-    <button type="button" class="edit-toggle add" data-edit="add-category" aria-expanded="false" aria-controls="add-category">+ Add category</button>
+    <button type="button" class="edit-toggle add" data-edit="add-category" aria-expanded="false" aria-controls="add-category">+ {{ _("Add category") }}</button>
     <div class="editor" id="add-category" hidden>
       <form method="post" action="/categories" role="group" class="add-category-form">
-        <input name="name" required maxlength="50" placeholder="e.g. Health" aria-label="Category name">
-        <button type="submit">Add</button>
+        <input name="name" required maxlength="50" placeholder="{{ _('e.g. Health') }}" aria-label="{{ _('Category name') }}">
+        <button type="submit">{{ _("Add") }}</button>
       </form>
     </div>
   </div>
@@ -115,10 +115,10 @@
     const editor = document.getElementById(btn.dataset.edit);
     const open = editor.hidden;
     editor.hidden = !open;
-    for (const t of document.querySelectorAll(`.edit-toggle[data-edit="${btn.dataset.edit}"]:not(.cancel)`)) {
-      t.setAttribute("aria-expanded", String(open));
-      t.dataset.label ??= t.textContent;
-      t.textContent = open ? "Close" : t.dataset.label;
+    for (const toggle of document.querySelectorAll(`.edit-toggle[data-edit="${btn.dataset.edit}"]:not(.cancel)`)) {
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.dataset.label ??= toggle.textContent;
+      toggle.textContent = open ? t("Close") : toggle.dataset.label;
     }
     if (open) editor.querySelector("input, select")?.focus();
   });
@@ -128,4 +128,5 @@
     if (msg && !confirm(msg)) e.preventDefault();
   });
 </script>
+</div>
 {% endblock %}

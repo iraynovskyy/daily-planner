@@ -73,6 +73,8 @@ class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     username: str = Field(max_length=50, unique=True, index=True)
     password_hash: str = Field(max_length=200)
+    # Interface language picked in Account (a key of i18n.LANGUAGES), or None for the default.
+    language: str | None = Field(default=None, max_length=5)
     created_at: dt.datetime = Field(default_factory=_now)
 
 

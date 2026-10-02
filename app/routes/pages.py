@@ -91,9 +91,6 @@ def habits_page(request: Request, session: SessionDep, user: UserDep):
     )
 
 
-MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-
 @router.get("/year/{year}", response_class=HTMLResponse)
 def year_page(
     request: Request,
@@ -120,19 +117,16 @@ def year_page(
     lead = stats.days[0].day.weekday()
     cells = [None] * lead + stats.days
     weeks = [cells[i : i + 7] for i in range(0, len(cells), 7)]
+    # Month numbers; the template names them in the page's language.
     month_labels = [
-        (w + 1, MONTH_NAMES[d.day.month - 1])
+        (w + 1, d.day.month)
         for w, week in enumerate(weeks)
         for d in week
         if d is not None and d.day.day == 1
     ]
     months = [
-        (
-            name,
-            [None] * date(year, m + 1, 1).weekday()
-            + [d for d in stats.days if d.day.month == m + 1],
-        )
-        for m, name in enumerate(MONTH_NAMES)
+        (m, [None] * date(year, m, 1).weekday() + [d for d in stats.days if d.day.month == m])
+        for m in range(1, 13)
     ]
     return templates.TemplateResponse(
         request,

@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}{{ first.strftime("%B %Y") }} · Daily Planner{% endblock %}
+{% block title %}{{ fmt_date(first, "month_year") }} · Daily Planner{% endblock %}
 {% block content %}
 <nav class="day-nav">
   <a href="/month/{{ prev_month.strftime('%Y-%m') }}" role="button" class="outline">←</a>
   <hgroup>
-    <h2>{{ first.strftime("%B") }}</h2>
+    <h2>{{ month_name(first.month) }}</h2>
     <p>{{ first.year }}</p>
   </hgroup>
   <a href="/month/{{ next_month.strftime('%Y-%m') }}" role="button" class="outline">→</a>
 </nav>
 
 {# Up to the year, down to today: the labels say where each arrow goes. #}
-<p class="back-to-month"><a href="/year/{{ first.year }}">← {{ first.year }}</a><span class="zoom-sep" aria-hidden="true">·</span><a href="/today">Today →</a></p>
+<p class="back-to-month"><a href="/year/{{ first.year }}">← {{ first.year }}</a><span class="zoom-sep" aria-hidden="true">·</span><a href="/today">{{ _("Today") }} →</a></p>
 
-{% with progress_label="Overall · " %}{% include "partials/progress.html" %}{% endwith %}
+{% with progress_label=_("Overall · ") %}{% include "partials/progress.html" %}{% endwith %}
 
 {% macro day_class(day) -%}
   {% if day == today %}today{% elif day > today %}future{% endif %}{% if day.weekday() >= 5 %} weekend{% endif %}
@@ -31,14 +31,14 @@
     <table class="month" style="--days: {{ g.days | length }}">
       <thead>
         <tr>
-          <th scope="col">Habit</th>
+          <th scope="col">{{ _("Habit") }}</th>
           {% for md in g.days %}
             {% set day = md.day %}
             <th scope="col" class="{{ day_class(day) }}" data-day="{{ day.isoformat() }}">
-              <a href="/day/{{ day.isoformat() }}" title="{{ day.strftime('%A %-d %B') }}">{{ day.day }} <small>{{ day.strftime("%a")[0] }}</small></a>
+              <a href="/day/{{ day.isoformat() }}" title="{{ fmt_date(day, 'long') }}">{{ day.day }} <small>{{ weekday(day, short=True)[:1] if page_lang() == "en" else weekday(day, short=True) }}</small></a>
             </th>
           {% endfor %}
-          <th scope="col" class="hl-col"><span class="visually-hidden">Highlight</span></th>
+          <th scope="col" class="hl-col"><span class="visually-hidden">{{ _("Highlight") }}</span></th>
         </tr>
       </thead>
       <tbody data-reorder>
@@ -46,10 +46,10 @@
           {% set hi = loop.index0 %}
           <tr data-habit-id="{{ h.id }}" data-habit-name="{{ h.name }}"{% if h.optional %} class="optional" data-optional{% endif %}{% if h.highlight %} data-hl="{{ h.highlight }}"{% endif %}>
             <th scope="row">
-              <button type="button" class="drag-handle" aria-label="Move {{ h.name }}: drag, or focus and press ↑/↓" title="Drag to reorder">⠿</button>
+              <button type="button" class="drag-handle" aria-label="{{ _('Move {name}: drag, or focus and press ↑/↓', name=h.name) }}" title="{{ _('Drag to reorder') }}">⠿</button>
               <span class="habit-title">{{ h.name }}</span>
               {%- if h.unit %} <small class="habit-unit">· {{ h.target_count if h.target_count > 1 else "" }} {{ h.unit }}</small>{% endif %}
-              {% if h.optional %}<span class="optional-tag">optional</span>{% endif %}
+              {% if h.optional %}<span class="optional-tag">{{ _("optional") }}</span>{% endif %}
               {% include "partials/streak.html" %}
             </th>
             {% for md in g.days %}
@@ -62,7 +62,7 @@
       </tbody>
       <tfoot>
         <tr>
-          <th scope="row">Done</th>
+          <th scope="row">{{ _("Done") }}</th>
           {% for md in g.days %}
             {% set day = md.day %}{% set day_progress = md.progress %}
             <td class="{{ day_class(day) }}">{% include "partials/day_progress.html" %}</td>
@@ -75,14 +75,14 @@
 
   {# Collapsed by default: the checkboxes are the main thing; open/closed is remembered per category. #}
   <details class="timeline-box" data-remember="timeline-{{ category_id }}">
-  <summary>{% if g.category.icon %}{{ g.category.icon }} {% endif %}{{ g.category.name }} timeline</summary>
-  <div class="timeline with-rings" data-today="{{ today.isoformat() }}" data-overall-label="All {{ g.category.name }}">
+  <summary>{% if g.category.icon %}{{ g.category.icon }} {% endif %}{{ _("{name} timeline", name=g.category.name) }}</summary>
+  <div class="timeline with-rings" data-today="{{ today.isoformat() }}" data-overall-label="{{ _('All {name}', name=g.category.name) }}">
     <div class="timeline-head">
-      <div class="timeline-legend" aria-label="Toggle lines"></div>
+      <div class="timeline-legend" aria-label="{{ _('Toggle lines') }}"></div>
     </div>
     <div class="timeline-chart">
       <svg class="timeline-svg" role="img" tabindex="0"
-           aria-label="{{ g.category.name }}: daily completion percentage for {{ first.strftime('%B %Y') }}. Use arrow keys to step through days."></svg>
+           aria-label="{{ _('{name}: daily completion for {month}. Use the arrow keys to step through the days.', name=g.category.name, month=fmt_date(first, 'month_year')) }}"></svg>
       <div class="timeline-tip" hidden></div>
     </div>
     <div class="timeline-rings" aria-live="polite"></div>
@@ -90,7 +90,7 @@
   </details>
 </section>
 {% else %}
-  <p>No habits yet. <a href="/habits">Add some</a>.</p>
+  <p>{{ _("No habits yet.") }} <a href="/habits">{{ _("Add some") }}</a>.</p>
 {% endfor %}
 
 {% include "partials/note_blocks.html" %}

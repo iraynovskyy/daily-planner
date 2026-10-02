@@ -63,7 +63,7 @@ def create_user(
     if len(password) < MIN_PASSWORD_LENGTH:
         raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters.")
     if session.exec(select(User).where(User.username == username)).first():
-        raise ValueError(f"User {username!r} already exists.")
+        raise ValueError("That username is already taken.")
     user = User(username=username, password_hash=hash_password(password))
     session.add(user)
     session.flush()
@@ -79,6 +79,20 @@ def set_password(session: Session, username: str, password: str) -> None:
     if user is None:
         raise ValueError(f"No user {username!r}.")
     user.password_hash = hash_password(password)
+    session.add(user)
+    session.commit()
+
+
+def change_password(session: Session, user_id: int, current: str, new: str) -> None:
+    """New password for a logged-in user who knows the current one. ValueError if not."""
+    user = session.get(User, user_id)
+    if user is None or not verify_password(user.password_hash, current):
+        raise ValueError("The current password isn't right.")
+    if len(new) < MIN_PASSWORD_LENGTH:
+        raise ValueError(f"The new password must be at least {MIN_PASSWORD_LENGTH} characters.")
+    if new == current:
+        raise ValueError("The new password is the same as the current one.")
+    user.password_hash = hash_password(new)
     session.add(user)
     session.commit()
 

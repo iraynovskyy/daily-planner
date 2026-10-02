@@ -2,6 +2,8 @@
 // Shows month-to-date completion per habit plus the category overall (optional habits
 // excluded, as everywhere else); while a day is hovered on the timeline, shows that day.
 // Reads the same checkbox grid as timeline.js, so it stays in sync with every HTMX click.
+{
+const locale = document.documentElement.lang === "uk" ? "uk-UA" : undefined;
 document.querySelectorAll(".category .timeline.with-rings").forEach((section) => {
   const root = section.closest(".category");
   const box = section.querySelector(".timeline-rings");
@@ -76,12 +78,12 @@ document.querySelectorAll(".category .timeline.with-rings").forEach((section) =>
     const caption = document.createElement("div");
     caption.className = "rings-caption";
     caption.textContent = focusDay
-      ? new Date(focusDay + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })
-      : "Month to date";
+      ? new Date(focusDay + "T00:00:00").toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })
+      : t("Month to date");
     if (!days.length) {
       const empty = document.createElement("p");
       empty.className = "rings-empty";
-      empty.textContent = "No progress to show yet";
+      empty.textContent = t("No progress to show yet");
       box.replaceChildren(caption, empty);
       return;
     }
@@ -94,10 +96,18 @@ document.querySelectorAll(".category .timeline.with-rings").forEach((section) =>
     const all = required
       .map((h) => count(h, started ? days : past))
       .reduce((s, c) => ({ done: s.done + c.done, target: s.target + c.target }), { done: 0, target: 0 });
+    if (!all.target && !focusDay) {
+      // Nothing counted yet this month (e.g. the 1st, before any tick): no rings of "—".
+      const empty = document.createElement("p");
+      empty.className = "rings-empty";
+      empty.textContent = t("The rings fill in as you tick.");
+      box.replaceChildren(caption, empty);
+      return;
+    }
     const list = document.createElement("ul");
     list.className = "ring-list";
     list.append(
-      ...perHabit.map((h) => row("li", "", pct(h.c), h.color, 44, h.name + (h.optional ? " (optional)" : ""), h.c)),
+      ...perHabit.map((h) => row("li", "", pct(h.c), h.color, 44, h.name + (h.optional ? ` (${t("optional")})` : ""), h.c)),
     );
     box.replaceChildren(
       caption,
@@ -117,3 +127,4 @@ document.querySelectorAll(".category .timeline.with-rings").forEach((section) =>
   });
   render();
 });
+}

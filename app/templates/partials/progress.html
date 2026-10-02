@@ -1,5 +1,5 @@
 {# `progress_id` defaults to the overall bar; category bars pass "progress-cat-<id>". #}
 <div id="{{ progress_id | default('progress') }}" class="progress-bar"{% if oob %} hx-swap-oob="true"{% endif %}>
   <progress value="{{ progress }}" max="100"></progress>
-  <small>{{ progress_label | default('') }}{{ progress }}% done{% if progress == 100 %} 🎉{% endif %}</small>
+  <small>{{ progress_label | default('') }}{{ _("{n}% done", n=progress) }}{% if progress == 100 %} 🎉{% endif %}</small>
 </div>
