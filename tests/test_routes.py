@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import date, timedelta
 
@@ -474,3 +475,12 @@ def test_browser_language_and_messages(anon_client):
     r = anon_client.post("/login", data={"username": "x", "password": "y"}, headers=uk)
     assert "Неправильне ім'я користувача або пароль." in r.text.replace("&#39;", "'")
     assert "Username" in anon_client.get("/login").text  # no preference: English
+
+
+def test_month_timeline_gets_the_days_before_the_month(client):
+    client.post("/entries/1/2026-09-30", data={"count": 1})
+    page = client.get("/month/2026-10").text
+    lead = json.loads(re.search(r"data-lead-in='([^']*)'", page)[1])  # Base: habits 1-5
+    assert set(lead) == {"1", "2", "3", "4", "5"} and len(lead["1"]) == 6
+    assert lead["1"][-1] == [1, 1]
+    assert page.count("data-lead-in=") == 3  # one per category

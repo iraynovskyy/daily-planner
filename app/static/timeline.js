@@ -159,11 +159,29 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
         return { ...c, value: pct(c, day) };
       }),
     };
+    // The days just before the month (from the server, per habit; null = not tracked yet), so the
+    // 7-day average carries over from the previous month instead of starting empty on the 1st.
+    const leadIn = JSON.parse(section.dataset.leadIn || "{}");
+    const leadDays = Math.max(0, ...Object.values(leadIn).map((row) => row.length));
+    const leadPoint = (c) => ({ ...c, value: c && c.target ? Math.round((100 * c.done) / c.target) : null });
+    for (const h of perHabit) {
+      h.lead = Array.from({ length: leadDays }, (_, i) => {
+        const c = leadIn[h.key]?.[i];
+        return c ? leadPoint({ done: c[0], target: c[1] }) : { done: 0, target: 0, value: null };
+      });
+    }
+    all.lead = Array.from({ length: leadDays }, (_, i) => {
+      const counted = perHabit.filter((h) => !h.optional && h.lead[i].target);
+      if (!counted.length) return { done: 0, target: 0, value: null };
+      return leadPoint(counted.reduce((s, h) => ({ done: s.done + h.lead[i].done, target: s.target + h.lead[i].target }), { done: 0, target: 0 }));
+    });
     // Lines show a trailing 7-day average (the trend); each day's own value stays as a faint dot.
     // The line starts once 3 days are in the window: a 1-day "average" is just that day's jump.
     series = [all, ...perHabit].map((s) => {
+      const history = [...s.lead, ...s.points];
       s.points.forEach((p, i) => {
-        const week = s.points.slice(Math.max(0, i - 6), i + 1).filter((q) => q.value !== null);
+        const j = i + leadDays;
+        const week = history.slice(Math.max(0, j - 6), j + 1).filter((q) => q.value !== null);
         p.avg = p.value === null || week.length < 3 ? null : week.reduce((sum, q) => sum + q.value, 0) / week.length;
       });
       return s;
@@ -282,6 +300,10 @@ document.querySelectorAll(".category .timeline").forEach((section) => {
       }
       el("path", { class: "halo", d });
       el("path", { class: s.key === "overall" ? "line overall" : "line", d, stroke: s.color });
+      // A stretch of a single day draws no line: show it as a small dot instead.
+      for (const r of parts) {
+        if (r.length === 1) el("circle", { class: "lone", cx: r[0][0], cy: r[0][1], r: 3, fill: s.color });
+      }
     }
 
     if (labelled) {
