@@ -76,7 +76,8 @@
   {# Collapsed by default: the checkboxes are the main thing; open/closed is remembered per category. #}
   <details class="timeline-box" data-remember="timeline-{{ category_id }}">
   <summary>{% if g.category.icon %}{{ g.category.icon }} {% endif %}{{ _("{name} timeline", name=g.category.name) }}</summary>
-  <div class="timeline with-rings" data-today="{{ today.isoformat() }}" data-overall-label="{{ _('All {name}', name=g.category.name) }}">
+  {# data-lead-in: the 6 days before the month, per habit; the trend's average carries over. #}
+  <div class="timeline with-rings" data-today="{{ today.isoformat() }}" data-lead-in='{{ lead_in[category_id] | tojson }}' data-overall-label="{{ _('All {name}', name=g.category.name) }}">
     <div class="timeline-head">
       <div class="timeline-legend" aria-label="{{ _('Toggle lines') }}"></div>
     </div>

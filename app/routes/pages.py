@@ -42,6 +42,8 @@ def month_page(
     except ValueError:
         raise HTTPException(404, "Invalid month") from None
     habits, days = services.get_month(session, user, first.year, first.month)
+    groups = services.month_by_category(session, user, habits, days)
+    lead = services.lead_in(session, user, first, habits)
     return templates.TemplateResponse(
         request,
         "month.html",
@@ -51,7 +53,9 @@ def month_page(
             "prev_month": (first - timedelta(days=1)).replace(day=1),
             "next_month": days[-1].day + timedelta(days=1),
             "habits": habits,
-            "groups": services.month_by_category(session, user, habits, days),
+            "groups": groups,
+            # Per category: the 6 days before the month, per habit (for the trend's average).
+            "lead_in": {g.category.id: {h.id: lead[h.id] for h in g.habits} for g in groups},
             "streaks": services.streaks(session, user, date.today()),
             "note_blocks": services.note_blocks(session, user),
             "progress": services.progress([i for d in days for i in d.items]),

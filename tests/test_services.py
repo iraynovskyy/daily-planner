@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from sqlmodel import Session, SQLModel, create_engine, select
@@ -357,3 +357,19 @@ def test_focus_habits(session):
     assert services.set_focus(session, USER, []) and not any(
         h.focus for h in services.list_habits(session, USER)
     )
+
+
+def test_lead_in_carries_the_previous_month_into_the_trend(session):
+    workout, food = services.list_habits(session, USER)[:2]
+    for habit in (workout, food):  # created "now"; pretend they exist since the summer
+        habit.created_at = datetime(2026, 6, 1, tzinfo=UTC)
+    session.commit()
+    services.set_count(session, USER, workout.id, date(2026, 9, 27), 1)  # the first tick ever
+    services.set_count(session, USER, food.id, date(2026, 9, 29), 2)
+    lead = services.lead_in(session, USER, date(2026, 10, 1), [workout, food])
+    # 24…30 Sep: before the first tick (27th) nothing was tracked; after it, misses count as 0.
+    assert lead[workout.id] == [None, None, [1, 1], [0, 1], [0, 1], [0, 1]]
+    assert lead[food.id] == [None, None, [0, 3], [0, 3], [2, 3], [0, 3]]
+    # A habit created this month (and not ticked before) has nothing to carry over.
+    new = services.create_habit(session, USER, "Stretch", 1, None)
+    assert services.lead_in(session, USER, date(2026, 10, 1), [new])[new.id] == [None] * 6

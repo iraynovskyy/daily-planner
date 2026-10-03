@@ -282,6 +282,39 @@ def get_month(
     return habits, days
 
 
+def lead_in(
+    session: Session, user_id: int, first: date, habits: list[Habit], days: int = 6
+) -> dict[int, list[list[int] | None]]:
+    """The `days` days before `first`, per habit: [done, target] (done capped), or None when
+    that day wasn't tracked yet (before the user's first tick, or before the habit existed and
+    with nothing ticked). The month chart averages over them, so its 7-day trend carries over
+    from the previous month instead of starting empty."""
+    start = first - timedelta(days=days)
+    by_key = {
+        (e.habit_id, e.date): e
+        for e in _entries(session, user_id, start, first - timedelta(days=1))
+    }
+    first_tick = session.exec(
+        select(DailyEntry.date)
+        .join(Habit, col(Habit.id) == col(DailyEntry.habit_id))
+        .where(Habit.user_id == user_id, DailyEntry.count_done > 0)
+        .order_by(col(DailyEntry.date))
+        .limit(1)
+    ).first()
+    out = {}
+    for h in habits:
+        row: list[list[int] | None] = []
+        for n in range(days):
+            d = start + timedelta(days=n)
+            e = by_key.get((h.id, d))
+            if first_tick is None or d < first_tick or (d < h.created_at.date() and e is None):
+                row.append(None)
+            else:
+                row.append([min(e.count_done, h.target_count) if e else 0, h.target_count])
+        out[h.id] = row
+    return out
+
+
 def set_count(
     session: Session,
     user_id: int,
