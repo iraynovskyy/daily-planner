@@ -35,7 +35,13 @@
 <body>
   <header class="container">
     <nav>
-      <ul><li><strong>📅 Daily Planner</strong></li></ul>
+      <ul>
+        <li><strong>📅 Daily Planner</strong></li>
+        {% if request.session.get("user_id") %}
+        {# The "Must" list (partials/must.html), loaded once the page is up so no page has to pass it. #}
+        <li class="must-slot" hx-get="/must" hx-trigger="load" hx-swap="innerHTML"></li>
+        {% endif %}
+      </ul>
       <ul>
         <li>
           <button type="button" class="theme-toggle" aria-label="{{ _('Switch light / dark theme') }}" title="{{ _('Light / dark') }}">
@@ -82,5 +88,6 @@
   <script src="{{ static_url('notes.js') }}"></script>
   <script src="{{ static_url('theme.js') }}"></script>
   <script src="{{ static_url('golden.js') }}"></script>
+  <script src="{{ static_url('must.js') }}"></script>
 </body>
 </html>

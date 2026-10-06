@@ -64,6 +64,18 @@ class Note(SQLModel, table=True):
     created_at: dt.datetime = Field(default_factory=_now)
 
 
+class MustItem(SQLModel, table=True):
+    """A one-off thing the user must do (the header's "Must" list), apart from the habits.
+    Done when `done_at` is set; done items are shown for the rest of that day only."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="app_user.id", index=True)
+    text: str = Field(max_length=200)
+    sort_order: int = 0
+    created_at: dt.datetime = Field(default_factory=_now)
+    done_at: dt.datetime | None = None
+
+
 class User(SQLModel, table=True):
     """A login. Only an argon2 hash of the password is stored, never the password."""
 

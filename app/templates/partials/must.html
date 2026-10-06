@@ -1,0 +1,31 @@
+{# The header's "Must": a quiet button (no counter) and a dropdown with the one-off things to do.
+   Open items first (⠿ to reorder), then today's done ones, faded; behaviour in static/must.js. #}
+<details class="must" id="must"{% if open %} open{% endif %}>
+  <summary class="must-button" title="{{ _('Must-do list') }}">{{ _("Must") }}</summary>
+  <div class="must-panel" role="dialog" aria-label="{{ _('Must-do list') }}">
+    <form class="must-add" hx-post="/must" hx-target="#must" hx-swap="outerHTML">
+      <input name="text" required maxlength="200" autocomplete="off"
+             placeholder="{{ _('Something you must do…') }}" aria-label="{{ _('New must-do') }}">
+      <button type="submit" aria-label="{{ _('Add') }}">＋</button>
+    </form>
+    <ul class="must-list" data-must-list>
+      {% for i in items %}
+      <li data-must-id="{{ i.id }}"{% if i.done_at %} class="done"{% endif %}>
+        {% if not i.done_at %}
+        <button type="button" class="drag-handle" title="{{ _('Drag to reorder') }}" aria-label="{{ _('Drag to reorder') }}">⠿</button>
+        {% endif %}
+        <input type="checkbox"{% if i.done_at %} checked{% endif %}
+               aria-label="{{ _('Mark not done: {text}', text=i.text) if i.done_at else _('Mark done: {text}', text=i.text) }}"
+               hx-post="/must/{{ i.id }}/done" hx-vals='{"done": {{ "false" if i.done_at else "true" }}}'
+               hx-target="#must" hx-swap="outerHTML">
+        <span class="must-text">{{ i.text }}</span>
+        <button type="button" class="must-action must-edit" title="{{ _('Edit') }}" aria-label="{{ _('Edit: {text}', text=i.text) }}">✎</button>
+        <button type="button" class="must-action must-delete" title="{{ _('Delete') }}" aria-label="{{ _('Delete: {text}', text=i.text) }}"
+                hx-post="/must/{{ i.id }}/delete" hx-target="#must" hx-swap="outerHTML">✕</button>
+      </li>
+      {% else %}
+      <li class="must-empty">{{ _("Nothing you must do. Add it above when something comes up.") }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</details>

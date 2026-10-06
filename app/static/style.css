@@ -698,6 +698,41 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
 .year-habits.collapsible:not(.expanded) li.more { display: none; }
 .year-habits-more { width: auto; margin: .9rem 0 0; padding: .3rem 1rem; font-size: .85rem; }
 
+/* --- "Must": a quiet button by the brand, opening a small card with the must-do list ---------- */
+.must-slot { position: relative; padding-block: 0; }
+details.must { margin: 0; position: relative; }
+details.must > summary {
+  list-style: none; display: inline-flex; align-items: center; cursor: pointer; margin: 0;
+  padding: .2rem .75rem; border-radius: 999px; border: 1px solid var(--pico-muted-border-color);
+  font-size: .82rem; font-weight: 500; color: var(--pico-muted-color); line-height: 1.5;
+}
+details.must > summary::-webkit-details-marker { display: none; }
+details.must > summary::after { display: none; } /* drop Pico's chevron */
+details.must > summary:hover, details.must[open] > summary { color: var(--pico-color); border-color: var(--pico-color); }
+details.must > summary:focus-visible { outline: 2px solid var(--pico-primary); outline-offset: 2px; }
+.must-panel {
+  position: absolute; top: calc(100% + .5rem); left: 0; z-index: 30; width: 22rem;
+  padding: .75rem; border-radius: .75rem; background: var(--pico-card-background-color);
+  border: 1px solid var(--pico-muted-border-color); box-shadow: 0 10px 30px rgb(0 0 0 / .25);
+}
+.must-add { display: flex; gap: .4rem; margin: 0 0 .5rem; }
+.must-add input { margin: 0; height: 2.3rem; padding-block: .3rem; font-size: .9rem; }
+.must-add button { margin: 0; width: 2.3rem; height: 2.3rem; padding: 0; flex: none; font-size: 1.1rem; line-height: 1; }
+.must-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; max-height: 60vh; overflow-y: auto; }
+.must-list li { list-style: none; display: flex; align-items: center; gap: .45rem; margin: 0; padding: .3rem .2rem; border-radius: 6px; font-size: .9rem; }
+.must-list li:hover { background: color-mix(in srgb, var(--pico-muted-border-color) 45%, transparent); }
+.must-list li input[type=checkbox] { margin: 0; flex: none; }
+.must-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.must-list li.done .must-text { text-decoration: line-through; opacity: .5; }
+.must-list li.done { padding-left: 1.85rem; } /* lines up with the open items' checkboxes */
+.must-list .drag-handle { margin-right: 0; padding: .1rem .25rem; }
+.must-action { all: unset; cursor: pointer; padding: .1rem .35rem; border-radius: 5px; color: var(--pico-muted-color); font-size: .85rem; opacity: 0; }
+.must-list li:hover .must-action, .must-action:focus-visible { opacity: 1; }
+.must-action:hover { color: var(--pico-color); background: var(--pico-muted-border-color); }
+.must-delete:hover { color: var(--pico-del-color); }
+.must-edit-input { flex: 1; margin: 0 !important; height: 2rem; padding: .2rem .5rem !important; font-size: .9rem; }
+.must-empty { color: var(--pico-muted-color); font-size: .85rem; padding: .4rem .2rem; }
+
 /* --- Phones: tab bar at the bottom instead of the header links -------------------------------- */
 /* Everything below only applies under 700px; wider screens look exactly as before. */
 .tabbar, .mobile-only { display: none; }
@@ -706,7 +741,7 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
   .desktop-only { display: none; }
 
   /* Header: brand + theme toggle only, on one line. */
-  body > header nav ul:last-child li:not(:first-child) { display: none; }
+  body > header nav > ul:last-child > li:not(:first-child) { display: none; }
   body > header nav strong { white-space: nowrap; font-size: 1rem; }
 
   /* Day header on one line: short date, tighter arrows. */
@@ -741,6 +776,9 @@ a.yc:hover, a.yc:focus-visible { outline: 1.5px solid var(--pico-color); outline
   body:has(.tabbar) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 
   .account-logout { margin-top: 2rem; }
+  /* Must on phones: a sheet across the screen under the header; actions always visible. */
+  .must-panel { position: fixed; top: calc(3.6rem + env(safe-area-inset-top)); left: 1rem; right: 1rem; width: auto; }
+  .must-action { opacity: 1; }
   .narrow-page .habit-form { grid-template-columns: 1fr 1fr; }
   .narrow-page .habit-form label:first-child { grid-column: 1 / -1; }
 
