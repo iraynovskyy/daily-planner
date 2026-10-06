@@ -309,6 +309,18 @@ UK: dict[str, str] = {
     ),
     "Repeat password": "Повтори пароль",
     "Create account": "Створити акаунт",
+    # the header's Must list
+    "Must": "Треба",
+    "Must-do list": "Що треба зробити",
+    "Something you must do…": "Що треба зробити…",
+    "New must-do": "Нова справа",
+    "Mark done: {text}": "Позначити виконаним: {text}",
+    "Mark not done: {text}": "Повернути до невиконаних: {text}",
+    "Edit: {text}": "Змінити: {text}",
+    "Delete: {text}": "Видалити: {text}",
+    "Nothing you must do. Add it above when something comes up.": (
+        "Нічого обов'язкового. Додай угорі, коли щось з'явиться."
+    ),
     # messages from the server
     "Wrong username or password.": "Неправильне ім'я користувача або пароль.",
     "Too many failed attempts. Try again in {n} min.": (
@@ -352,4 +364,5 @@ JS_TEXTS = (
     "Edit note",
     "Close",
     "Copied ✓",
+    "Edit",
 )

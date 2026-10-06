@@ -484,3 +484,20 @@ def test_month_timeline_gets_the_days_before_the_month(client):
     assert set(lead) == {"1", "2", "3", "4", "5"} and len(lead["1"]) == 6
     assert lead["1"][-1] == [1, 1]
     assert page.count("data-lead-in=") == 3  # one per category
+
+
+def test_must_dropdown(client):
+    page = client.get("/day/2026-10-01").text
+    assert 'hx-get="/must" hx-trigger="load"' in page and "must.js" in page
+    closed = client.get("/must").text
+    assert '<details class="must" id="must">' in closed and "Nothing you must do" in closed
+    r = client.post("/must", data={"text": "Book the doctor"})
+    assert '<details class="must" id="must" open>' in r.text and "Book the doctor" in r.text
+    item = re.search(r'data-must-id="(\d+)"', r.text)[1]
+    r = client.post(f"/must/{item}/done", data={"done": "true"})
+    assert 'class="done"' in r.text and "Mark not done: Book the doctor" in r.text
+    assert "Send it" in client.post(f"/must/{item}", data={"text": "Send it"}).text
+    assert client.post("/must/order", data={"ids": [item]}).status_code == 204
+    assert "Nothing you must do" in client.post(f"/must/{item}/delete").text
+    assert client.post(f"/must/{item}/delete").status_code == 404
+    assert client.post("/must", data={"text": ""}).status_code == 422

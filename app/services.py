@@ -7,7 +7,7 @@ from pathlib import Path
 from sqlmodel import Session, SQLModel, col, select
 
 from app.config import settings
-from app.models import Category, DailyEntry, Habit, Note
+from app.models import Category, DailyEntry, Habit, MustItem, Note
 
 # Row highlight colours a habit can be tinted with (CSS: [data-hl="<name>"]).
 HIGHLIGHTS = ("blue", "green", "amber", "rose", "violet")
@@ -735,3 +735,81 @@ def set_highlight(
     habit.highlight = highlight
     session.commit()
     return habit
+
+
+# --- the header's "Must" list: one-off things to do, apart from the habits ----------------------
+
+
+def list_must(session: Session, user_id: int, today: date) -> list[MustItem]:
+    """Open items in their order, then the ones done today; items done before today drop out
+    of the list (they stay in the database)."""
+    items = list(session.exec(select(MustItem).where(MustItem.user_id == user_id)))
+    start = datetime.combine(today, datetime.min.time(), UTC)
+    open_ = sorted((i for i in items if i.done_at is None), key=lambda i: (i.sort_order, i.id))
+    done = sorted(
+        (i for i in items if i.done_at is not None and _aware(i.done_at) >= start),
+        key=lambda i: _aware(i.done_at),
+    )
+    return open_ + done
+
+
+def _aware(value: datetime) -> datetime:
+    # SQLite hands datetimes back without a timezone; they are stored in UTC.
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
+
+
+def add_must(session: Session, user_id: int, text: str) -> MustItem:
+    """A new item, at the top of the open ones (the newest must-do is usually the most present)."""
+    first = min(
+        (i.sort_order for i in session.exec(select(MustItem).where(MustItem.user_id == user_id))),
+        default=0,
+    )
+    item = MustItem(user_id=user_id, text=text.strip(), sort_order=first - 1)
+    session.add(item)
+    session.commit()
+    return item
+
+
+def edit_must(session: Session, user_id: int, item_id: int, text: str) -> MustItem | None:
+    item = _owned(session, MustItem, item_id, user_id)
+    if item is None:
+        return None
+    item.text = text.strip()
+    session.commit()
+    return item
+
+
+def set_must_done(session: Session, user_id: int, item_id: int, done: bool) -> MustItem | None:
+    item = _owned(session, MustItem, item_id, user_id)
+    if item is None:
+        return None
+    item.done_at = datetime.now(UTC) if done else None
+    session.commit()
+    return item
+
+
+def reorder_must(session: Session, user_id: int, ids: list[int]) -> bool:
+    """New order of the open items (as dragged). False if an id is unknown or repeated."""
+    if not ids or len(set(ids)) != len(ids):
+        return False
+    items = {
+        i.id: i
+        for i in session.exec(
+            select(MustItem).where(MustItem.user_id == user_id, col(MustItem.id).in_(ids))
+        )
+    }
+    if len(items) != len(ids):
+        return False
+    for pos, item_id in enumerate(ids):
+        items[item_id].sort_order = pos
+    session.commit()
+    return True
+
+
+def delete_must(session: Session, user_id: int, item_id: int) -> MustItem | None:
+    item = _owned(session, MustItem, item_id, user_id)
+    if item is None:
+        return None
+    session.delete(item)
+    session.commit()
+    return item

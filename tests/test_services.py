@@ -373,3 +373,32 @@ def test_lead_in_carries_the_previous_month_into_the_trend(session):
     # A habit created this month (and not ticked before) has nothing to carry over.
     new = services.create_habit(session, USER, "Stretch", 1, None)
     assert services.lead_in(session, USER, date(2026, 10, 1), [new])[new.id] == [None] * 6
+
+
+def test_must_list(session):
+    report = services.add_must(session, USER, "  Submit the report  ")
+    doctor = services.add_must(session, USER, "Book the doctor")  # newest goes on top
+    assert report.text == "Submit the report"
+    today = date.today()
+    assert [i.text for i in services.list_must(session, USER, today)] == [
+        "Book the doctor",
+        "Submit the report",
+    ]
+    services.set_must_done(session, USER, doctor.id, True)  # done: moves to the bottom, today only
+    assert [i.id for i in services.list_must(session, USER, today)] == [report.id, doctor.id]
+    assert [i.id for i in services.list_must(session, USER, today + timedelta(days=1))] == [
+        report.id
+    ]
+    services.set_must_done(session, USER, doctor.id, False)  # undo
+    assert services.list_must(session, USER, today)[0].id == doctor.id
+    assert services.reorder_must(session, USER, [report.id, doctor.id])
+    assert [i.id for i in services.list_must(session, USER, today)] == [report.id, doctor.id]
+    assert not services.reorder_must(session, USER, [report.id, report.id])
+    assert services.edit_must(session, USER, report.id, "Send the report").text == "Send the report"
+    assert services.delete_must(session, USER, report.id) is not None
+    assert [i.id for i in services.list_must(session, USER, today)] == [doctor.id]
+    other = User(username="other", password_hash="x")
+    session.add(other)
+    session.commit()
+    assert services.edit_must(session, other.id, doctor.id, "mine") is None  # not theirs
+    assert services.list_must(session, other.id, today) == []
