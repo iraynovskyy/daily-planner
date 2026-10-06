@@ -36,6 +36,7 @@ own). Add it to the home screen and it opens full screen on today's checklist, l
 - **Timelines** with progress rings per category: smooth 7-day-average trend lines that carry over from the previous month, with each day as a faint dot (or a Daily view with the exact values), a line per habit to show or hide (or all at once); today counts once you tick something, so an unfinished day never shows as a drop to 0%
 - **Drag-and-drop** (or keyboard) reordering and per-row highlight colours
 - **Notes** in collapsible blocks (tips, ideas, comfort), editable in place and movable between blocks
+- **Must**: a quiet button by the title opens a short list of one-off things you must do; tick one and it moves to the bottom, struck through, until the next day
 - **Light / dark theme** switch, remembered per browser
 - **Phone layout**: bottom tab bar, compact month grid, touch-friendly charts; **installable** on the home screen, with Today and Year shortcuts on the icon
 - **Several users**, each with their own data; invite a friend with a one-time link

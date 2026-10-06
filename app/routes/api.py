@@ -263,3 +263,72 @@ def delete_note(request: Request, note_id: int, session: SessionDep, user: UserD
     if note is None:
         raise HTTPException(404, "Note not found")
     return _notes_block(request, session, user, note.kind)
+
+
+# --- the header's "Must" list ------------------------------------------------------------------
+
+
+def _must(request: Request, session: Session, user: int, *, open: bool = True):
+    """The Must button with its dropdown, re-rendered (kept open after a change)."""
+    return templates.TemplateResponse(
+        request,
+        "partials/must.html",
+        {"items": services.list_must(session, user, date.today()), "open": open},
+    )
+
+
+@router.get("/must", response_class=HTMLResponse)
+def must(request: Request, session: SessionDep, user: UserDep):
+    """Lazy-loaded into the header of every page (closed)."""
+    return _must(request, session, user, open=False)
+
+
+@router.post("/must", response_class=HTMLResponse)
+def add_must(
+    request: Request,
+    text: Annotated[str, Form(min_length=1, max_length=200)],
+    session: SessionDep,
+    user: UserDep,
+):
+    services.add_must(session, user, text)
+    return _must(request, session, user)
+
+
+@router.post("/must/order", status_code=204)
+def reorder_must(ids: Annotated[list[int], Form()], session: SessionDep, user: UserDep) -> None:
+    """Drag-and-drop: the open items' new order (the page already shows it)."""
+    if not services.reorder_must(session, user, ids):
+        raise HTTPException(400, "Unknown or repeated ids")
+
+
+@router.post("/must/{item_id}", response_class=HTMLResponse)
+def edit_must(
+    request: Request,
+    item_id: int,
+    text: Annotated[str, Form(min_length=1, max_length=200)],
+    session: SessionDep,
+    user: UserDep,
+):
+    if services.edit_must(session, user, item_id, text) is None:
+        raise HTTPException(404, "Not found")
+    return _must(request, session, user)
+
+
+@router.post("/must/{item_id}/done", response_class=HTMLResponse)
+def set_must_done(
+    request: Request,
+    item_id: int,
+    done: Annotated[bool, Form()],
+    session: SessionDep,
+    user: UserDep,
+):
+    if services.set_must_done(session, user, item_id, done) is None:
+        raise HTTPException(404, "Not found")
+    return _must(request, session, user)
+
+
+@router.post("/must/{item_id}/delete", response_class=HTMLResponse)
+def delete_must(request: Request, item_id: int, session: SessionDep, user: UserDep):
+    if services.delete_must(session, user, item_id) is None:
+        raise HTTPException(404, "Not found")
+    return _must(request, session, user)
